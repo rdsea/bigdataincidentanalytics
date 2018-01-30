@@ -56,4 +56,9 @@ https://github.com/rdsea/IoTCloudSamples. This is used to simulate the IoT senso
 12. Execute the nifirule.py
 
 The log data from the test scenario is fetched and fed via logstash into elasticsearch. The rule then identifies, classifies and writes the incident into elasticsearch where it can be visualised with Kibana. 
+
+If an incident is added to the prototyp three changes have to be comitted:
+1. The classification has to be expanded to cover all the specifics of a new incident
+2. A monitoring agent has to be implemented that delivers the necessary instrumentation data
+3. A detecion and classification rule needs to be developed. 
  
