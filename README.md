@@ -46,10 +46,12 @@ https://github.com/rdsea/IoTCloudSamples. This is used to simulate the IoT senso
   * Configure a MQTT processer consuming the MQTT stream from the Dockerised components
   * Configure a HDFS processor writing into the local hdfs 
   * Configure a message queue between the two processors
+
 6. Install Elasticsearch 
 7. Install Kibana
 8. Install Neo4j 
   * The database has to be initialised with the classification 
+
 9. Install logstash on the server running the Apache Nifi installation 
 10. Configure logstash with nifiPipeline.conf
 11. Install python on the server running the rules 
