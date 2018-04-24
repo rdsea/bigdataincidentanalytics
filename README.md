@@ -13,6 +13,10 @@ Following components are included in the prototype:
 * Monitoring agent 
 * Detection and classification rule
 
+Citation:
+* Hong-Linh Truong, Manfred Halper, Characterizing Incidents in Cloud-based IoT Data Analytics, Proceedings of The 42nd IEEE International Conference on
+Computers, Software and Applications (COMPSAC 2018), (https://www.researchgate.net/publication/324170664_Characterizing_Incidents_in_Cloud-based_IoT_Data_Analytics)
+
 ## Installation 
 
 ### Required Software
