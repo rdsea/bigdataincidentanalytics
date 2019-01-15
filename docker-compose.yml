@@ -1,0 +1,159 @@
+version: '2.4'
+
+services:
+
+  ##### HADOOP #####
+  namenode:
+    image: uhopper/hadoop-namenode
+    hostname: namenode
+    container_name: namenode
+    domainname: iot-big-data
+    networks:
+      - iot-big-data
+    volumes:
+      - /hadoop/dfs/name
+      - ./hadoop_setup.sh:/usr/local/bin/hadoop_setup.sh
+    command: hadoop_setup.sh
+    environment:
+      - CLUSTER_NAME=myCluster
+    ports:
+      - 50070:50070
+
+  datanode1:
+    image: uhopper/hadoop-datanode
+    hostname: datanode1
+    container_name: datanode1
+    domainname: iot-big-data
+    networks:
+      - iot-big-data
+    volumes:
+      - /hadoop/dfs/data
+    environment:
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:8020
+      - HDFS_CONF_dfs_permissions=false
+
+  resourcemanager:
+    image: uhopper/hadoop-resourcemanager
+    hostname: resourcemanager
+    container_name: resourcemanager
+    domainname: iot-big-data
+    networks:
+      - iot-big-data
+    environment:
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:8020
+      - YARN_CONF_yarn_log___aggregation___enable=true
+      - HDFS_CONF_dfs_permissions=false
+    ports:
+      - 8088:8088
+
+  nodemanager1:
+    image: uhopper/hadoop-nodemanager
+    hostname: nodemanager1
+    container_name: nodemanager1
+    domainname: iot-big-data
+    networks:
+      - iot-big-data
+    environment:
+      - CORE_CONF_fs_defaultFS=hdfs://namenode:8020
+      - YARN_CONF_yarn_resourcemanager_hostname=resourcemanager
+      - YARN_CONF_yarn_log___aggregation___enable=true
+      - YARN_CONF_yarn_nodemanager_remote___app___log___dir=/app-logs
+      - HDFS_CONF_dfs_permissions=false
+
+  ##### NIFI #####
+  nifi:
+    image: apache/nifi:latest
+    hostname: nifi
+    container_name: nifi
+    domainname: iot-big-data
+    volumes:
+      - $PWD/logs:/opt/nifi/nifi-current/logs
+      - $PWD/hadoop/config:/opt/nifi/nifi-current/hadoop
+    networks:
+      - iot-big-data
+    ports:
+      - 8080:8080
+
+  ##### MQTT Broker #####
+  mqtt:
+    image: eclipse-mosquitto
+    hostname: mqtt
+    container_name: mqtt
+    domainname: iot-big-data
+    networks:
+      - iot-big-data
+    ports:
+      - 1883:1883
+      - 9001:9001
+
+  ##### ELK Stack #####
+  elasticsearch:
+    build:
+      context: elasticsearch/
+      args:
+        ELK_VERSION: $ELK_VERSION
+    container_name: elasticsearch
+    volumes:
+      - ./elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
+    ports:
+      - 9200:9200
+      - 9300:9300
+    environment:
+      ES_JAVA_OPTS: "-Xmx256m -Xms256m"
+    networks:
+      - elk
+      - iot-big-data
+
+  logstash:
+    build:
+      context: logstash/
+      args:
+        ELK_VERSION: $ELK_VERSION
+    container_name: logstash
+    volumes:
+      - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
+      - ./logstash/pipeline:/usr/share/logstash/pipeline:ro
+      - $PWD/logs:/usr/share/logstash/nifi/logs
+    ports:
+      - 5000:5000
+      - 9600:9600
+    environment:
+      LS_JAVA_OPTS: "-Xmx256m -Xms256m"
+    networks:
+      - elk
+      - iot-big-data
+    depends_on:
+      - elasticsearch
+
+  kibana:
+    build:
+      context: kibana/
+      args:
+        ELK_VERSION: $ELK_VERSION
+    container_name: kibana
+    volumes:
+      - ./kibana/config/:/usr/share/kibana/config:ro
+    ports:
+      - 5601:5601
+    networks:
+      - elk
+      - iot-big-data
+    depends_on:
+      - elasticsearch
+
+  ##### NEO4J Classification #####
+  neo4j:
+    build:
+      context: classification/
+    container_name: neo4j
+    networks:
+      - iot-big-data
+    ports:
+      - 7474:7474
+      - 7687:7687
+
+networks:
+  iot-big-data:
+    external: true
+  elk:
+    driver: bridge

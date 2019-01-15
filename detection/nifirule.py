@@ -69,7 +69,7 @@ def create_incident():
     print(result['created'])
 
 #Instantiate Database connections
-CLIENT = Elasticsearch([{'host': '192.168.33.33', 'port': 9200}])
+CLIENT = Elasticsearch([{'host': 'localhost', 'port': 9200}])
 DATABASE = GraphDatabase("http://localhost:7474", username="neo4j", password="Ztu5C!:")
 data = {}
 
