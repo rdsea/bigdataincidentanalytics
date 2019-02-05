@@ -21,7 +21,7 @@ class ElasticSearchInsertionSinkFunction : ElasticsearchSinkFunction<MqttMessage
 
     override fun process(element: MqttMessage, ctx: RuntimeContext, indexer: RequestIndexer) {
         val indexRequest = createIndexRequest(element)
-        logger.info { "SINK - new IndexRequest created" }
+        logger.debug { "SINK - new IndexRequest created" }
         indexer.add(indexRequest)
     }
 

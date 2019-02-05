@@ -24,24 +24,26 @@ class MqttSource(
 ) : RichSourceFunction<MqttMessage>() {
 
     private val interrupted = AtomicBoolean()
+    private val mqtt = MQTT()
 
     override fun run(ctx: SourceFunction.SourceContext<MqttMessage>) {
         interrupted.set(false)
-        val mqtt = MQTT()
         mqtt.host = uri
         val blockingConnection = mqtt.blockingConnection()
         blockingConnection.connect()
         blockingConnection.subscribe(arrayOf(Topic(topic, QoS.AT_LEAST_ONCE)))
 
+        logger.info { "Connected to MQTT source" }
         while (blockingConnection.isConnected && !interrupted.get()) {
             val message = blockingConnection.receive()
-            logger.info { "MQTT message received" }
+            logger.debug { "MQTT message received" }
             val mqttMessage = MqttMessage(message.topic, String(message.payload))
             message.ack()
             ctx.collect(mqttMessage)
         }
 
         blockingConnection.disconnect()
+        logger.info { "Disconnected from MQTT source" }
     }
 
     override fun cancel() {

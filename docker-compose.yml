@@ -22,6 +22,33 @@ services:
       - 1883:1883
       - 9001:9001
 
+  ##### FLINK #####
+  flink_jobmanager:
+    image: flink:1.7.1-alpine
+    container_name: jobmanager
+    expose:
+      - 6123
+    ports:
+      - 8081:8081
+    networks:
+      - iot-big-data
+    command: jobmanager
+    environment:
+      - JOB_MANAGER_RPC_ADDRESS=jobmanager
+
+  flink_taskmanager:
+    image: flink:1.7.1-alpine
+    expose:
+      - 6121
+      - 6122
+    networks:
+      - iot-big-data
+    depends_on:
+      - flink_jobmanager
+    command: taskmanager
+    environment:
+      - JOB_MANAGER_RPC_ADDRESS=jobmanager
+
   ##### HADOOP #####
   namenode:
     image: uhopper/hadoop-namenode

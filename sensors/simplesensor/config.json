@@ -1,7 +1,7 @@
 {
     "protocol": "mqtt",
     "protocolOptions": {"topic": "customTopic"},
-    "format": "csv",
+    "format": "json",
     "uri": "http://mqtt:1883",
     "file": "/var/config/data.csv"
 }
