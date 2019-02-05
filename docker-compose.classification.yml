@@ -2,26 +2,6 @@ version: '2.4'
 
 services:
 
-  ##### IoT Sensors #####
-  simplesensor:
-    image: danielfuvesi/bigdataincidentanalytics:simplesensor
-    networks:
-      - iot-big-data
-    volumes:
-      - $PWD/sensors/simplesensor:/var/config
-    command: npm start -- -c /var/config/config.json
-
-  ##### MQTT Broker #####
-  mqtt:
-    image: eclipse-mosquitto
-    container_name: mqtt
-    domainname: iot-big-data
-    networks:
-      - iot-big-data
-    ports:
-      - 1883:1883
-      - 9001:9001
-
   ##### HADOOP #####
   namenode:
     image: uhopper/hadoop-namenode
@@ -80,6 +60,32 @@ services:
       - YARN_CONF_yarn_nodemanager_remote___app___log___dir=/app-logs
       - HDFS_CONF_dfs_permissions=false
 
+  ##### NIFI #####
+  nifi:
+    image: apache/nifi:latest
+    hostname: nifi
+    container_name: nifi
+    domainname: iot-big-data
+    volumes:
+      - $PWD/logs:/opt/nifi/nifi-current/logs
+      - $PWD/hadoop/config:/opt/nifi/nifi-current/hadoop
+    networks:
+      - iot-big-data
+    ports:
+      - 8080:8080
+
+  ##### MQTT Broker #####
+  mqtt:
+    image: eclipse-mosquitto
+    hostname: mqtt
+    container_name: mqtt
+    domainname: iot-big-data
+    networks:
+      - iot-big-data
+    ports:
+      - 1883:1883
+      - 9001:9001
+
   ##### ELK Stack #####
   elasticsearch:
     build:
@@ -97,6 +103,54 @@ services:
     networks:
       - elk
       - iot-big-data
+
+  logstash:
+    build:
+      context: logstash/
+      args:
+        ELK_VERSION: $ELK_VERSION
+    container_name: logstash
+    volumes:
+      - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
+      - ./logstash/pipeline:/usr/share/logstash/pipeline:ro
+      - $PWD/logs:/usr/share/logstash/nifi/logs
+    ports:
+      - 5000:5000
+      - 9600:9600
+    environment:
+      LS_JAVA_OPTS: "-Xmx256m -Xms256m"
+    networks:
+      - elk
+      - iot-big-data
+    depends_on:
+      - elasticsearch
+
+  kibana:
+    build:
+      context: kibana/
+      args:
+        ELK_VERSION: $ELK_VERSION
+    container_name: kibana
+    volumes:
+      - ./kibana/config/:/usr/share/kibana/config:ro
+    ports:
+      - 5601:5601
+    networks:
+      - elk
+      - iot-big-data
+    depends_on:
+      - elasticsearch
+
+  ##### NEO4J Classification #####
+  neo4j:
+    build:
+      context: classification/
+    container_name: neo4j
+    networks:
+      - iot-big-data
+    ports:
+      - 7474:7474
+      - 7687:7687
 
 networks:
   iot-big-data:
