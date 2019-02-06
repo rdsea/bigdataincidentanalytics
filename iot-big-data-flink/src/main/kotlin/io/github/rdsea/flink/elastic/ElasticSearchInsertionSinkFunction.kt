@@ -2,7 +2,7 @@ package io.github.rdsea.flink.elastic
 
 import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
-import io.github.rdsea.flink.domain.SensorRecord
+import io.github.rdsea.flink.domain.SensorAlarmReport
 import io.github.rdsea.flink.util.LocalDateTimeJsonSerializer
 import mu.KLogging
 import org.apache.flink.api.common.functions.RuntimeContext
@@ -21,15 +21,15 @@ import java.time.LocalDateTime
  * @version 1.0.0
  * @since 1.0.0
  */
-class ElasticSearchInsertionSinkFunction : ElasticsearchSinkFunction<SensorRecord> {
+class ElasticSearchInsertionSinkFunction : ElasticsearchSinkFunction<SensorAlarmReport> {
 
-    override fun process(element: SensorRecord, ctx: RuntimeContext, indexer: RequestIndexer) {
+    override fun process(element: SensorAlarmReport, ctx: RuntimeContext, indexer: RequestIndexer) {
         val indexRequest = createIndexRequest(element)
         logger.debug { "SINK - new IndexRequest created" }
         indexer.add(indexRequest)
     }
 
-    private fun createIndexRequest(element: SensorRecord): IndexRequest {
+    private fun createIndexRequest(element: SensorAlarmReport): IndexRequest {
         val type = object : TypeToken<Map<String, String>>() {}.type
         val json: Map<String, String> = gson.fromJson(gson.toJson(element), type)
 

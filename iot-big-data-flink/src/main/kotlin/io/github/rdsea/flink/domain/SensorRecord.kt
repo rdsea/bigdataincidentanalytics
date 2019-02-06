@@ -13,18 +13,18 @@ import java.time.LocalDateTime
  * @since 1.0.0
  */
 data class SensorRecord(
-    val id: String,
+    var id: String = "",
     @SerializedName("station_id")
-    val stationId: String,
+    var stationId: String = "",
     @SerializedName("alarm_id")
-    val alarmId: String,
+    var alarmId: String = "",
     @SerializedName("parameter_id")
-    val parameterId: String,
+    var parameterId: String = "",
     @SerializedName("start_time")
-    val startTime: LocalDateTime,
+    var startTime: LocalDateTime = LocalDateTime.MIN,
     @SerializedName("end_time")
-    val endTime: LocalDateTime,
+    var endTime: LocalDateTime = LocalDateTime.MIN,
     @SerializedName("value")
-    val sensorValue: Double,
-    val threshold: Double
+    var sensorValue: Double = 0.0,
+    var threshold: Double = 0.0
 )
