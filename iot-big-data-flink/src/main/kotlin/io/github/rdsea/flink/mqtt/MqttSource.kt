@@ -1,6 +1,7 @@
 package io.github.rdsea.flink.mqtt
 
 import mu.KLogging
+import org.apache.flink.configuration.Configuration
 import org.apache.flink.streaming.api.functions.source.RichSourceFunction
 import org.apache.flink.streaming.api.functions.source.SourceFunction
 import org.fusesource.mqtt.client.MQTT
@@ -24,7 +25,11 @@ class MqttSource(
 ) : RichSourceFunction<MqttMessage>() {
 
     private val interrupted = AtomicBoolean()
-    private val mqtt = MQTT()
+    private lateinit var mqtt: MQTT
+
+    override fun open(parameters: Configuration?) {
+        mqtt = MQTT()
+    }
 
     override fun run(ctx: SourceFunction.SourceContext<MqttMessage>) {
         interrupted.set(false)

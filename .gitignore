@@ -258,3 +258,5 @@ yarn-error.log*
 hs_err_pid*
 /hadoop/config/hdfs-site.xml
 /hadoop/config/core-site.xml
+/nodered/*
+!/nodered/settings.js

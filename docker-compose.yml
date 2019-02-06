@@ -8,7 +8,7 @@ services:
     networks:
       - iot-big-data
     volumes:
-      - $PWD/sensors/simplesensor:/var/config
+      - ./sensors/simplesensor:/var/config
     command: npm start -- -c /var/config/config.json
 
   ##### MQTT Broker #####
@@ -49,6 +49,20 @@ services:
     environment:
       - JOB_MANAGER_RPC_ADDRESS=jobmanager
 
+  ##### NIFI #####
+  nifi:
+    image: apache/nifi:latest
+    hostname: nifi
+    container_name: nifi
+    domainname: iot-big-data
+    volumes:
+      - ./logs:/opt/nifi/nifi-current/logs
+      - ./hadoop/config:/opt/nifi/nifi-current/hadoop
+    networks:
+      - iot-big-data
+    ports:
+      - 8080:8080
+
   ##### HADOOP #####
   namenode:
     image: uhopper/hadoop-namenode
@@ -59,7 +73,7 @@ services:
       - iot-big-data
     volumes:
       - /hadoop/dfs/name
-      - ./hadoop_setup.sh:/usr/local/bin/hadoop_setup.sh
+      - ./hadoop/hadoop_setup.sh:/usr/local/bin/hadoop_setup.sh
     command: hadoop_setup.sh
     environment:
       - CLUSTER_NAME=myCluster
@@ -106,6 +120,15 @@ services:
       - YARN_CONF_yarn_log___aggregation___enable=true
       - YARN_CONF_yarn_nodemanager_remote___app___log___dir=/app-logs
       - HDFS_CONF_dfs_permissions=false
+
+  nodered:
+    image: nodered/node-red-docker:slim
+    ports:
+      - 1880:1880
+    networks:
+      - iot-big-data
+    volumes:
+      - ./nodered:/data
 
   ##### ELK Stack #####
   elasticsearch:

@@ -1,8 +1,10 @@
 package io.github.rdsea.flink
 
+import io.github.rdsea.flink.domain.SensorRecord
 import io.github.rdsea.flink.elastic.ElasticSearchInsertionSinkFunction
-import io.github.rdsea.flink.mqtt.MqttMessage
+import io.github.rdsea.flink.mqtt.MqttMessageToSensorRecordMapper
 import io.github.rdsea.flink.mqtt.MqttSource
+import io.github.rdsea.flink.util.Configuration
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment
 import org.apache.flink.streaming.connectors.elasticsearch6.ElasticsearchSink
 import org.apache.http.HttpHost
@@ -24,15 +26,19 @@ class Main {
         @JvmStatic fun main(args: Array<String>) {
             val config = checkArgs(args)
             val env = StreamExecutionEnvironment.getExecutionEnvironment()
-            val dataStream = env.addSource(MqttSource(config.mqttUri, config.mqttTopic))
+            val dataStream = env
+                .addSource(MqttSource(config.mqttUri, config.mqttTopic))
+                .map(MqttMessageToSensorRecordMapper())
 
             // apply custom transformation on dataStream
 
             // send transformed data to Elasticsearch
-            val elasticSinkBuilder = ElasticsearchSink.Builder<MqttMessage>(listOf(HttpHost(config.elasticUri.host, config.elasticUri.port)), ElasticSearchInsertionSinkFunction())
+            val elasticSinkBuilder = ElasticsearchSink.Builder<SensorRecord>(listOf(HttpHost(config.elasticUri.host, config.elasticUri.port)), ElasticSearchInsertionSinkFunction())
             elasticSinkBuilder.setBulkFlushMaxActions(1)
 
             val elasticsearchSink = elasticSinkBuilder.build()
+            // dataStream.countWindowAll(7)
+
             dataStream.addSink(elasticsearchSink)
 
             env.execute("IoT Big Data Analytics Example")
@@ -55,10 +61,4 @@ class Main {
             }
         }
     }
-
-    data class Configuration(
-        val mqttUri: URI,
-        val mqttTopic: String,
-        val elasticUri: URI
-    )
 }
