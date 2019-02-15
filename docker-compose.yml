@@ -22,6 +22,17 @@ services:
       - 1883:1883
       - 9001:9001
 
+  ##### PROMETHEUS MOSQUITTO EXPORTER
+  mqtt_exporter:
+    image: sapcc/mosquitto-exporter
+    container_name: mosquitto-exporter
+    networks:
+      - iot-big-data
+    ports:
+      - 9234:9234
+    environment:
+      - BROKER_ENDPOINT=tcp://mqtt:1883
+
   ##### FLINK #####
   flink_jobmanager:
     image: flink:1.7.1-alpine
@@ -164,8 +175,29 @@ services:
     depends_on:
       - elasticsearch
 
+  prometheus:
+    image: prom/prometheus:v2.7.1
+    container_name: prometheus
+    ports:
+      - 9090:9090
+    networks:
+      - iot-big-data
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus/flink.rules.yml:/etc/prometheus/flink.rules.yml
+
+  grafana:
+    image: grafana/grafana:5.4.3
+    container_name: grafana
+    ports:
+      - 3000:3000
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=password
+    volumes:
+    - ./grafana/provisioning/:/etc/grafana/provisioning/
+
 networks:
   iot-big-data:
-    external: true
+    driver: bridge
   elk:
     driver: bridge
