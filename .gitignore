@@ -260,3 +260,4 @@ hs_err_pid*
 /hadoop/config/core-site.xml
 /nodered/*
 !/nodered/settings.js
+!/nodered/flows.json
