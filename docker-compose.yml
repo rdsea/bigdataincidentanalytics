@@ -24,7 +24,7 @@ services:
 
   ##### PROMETHEUS MOSQUITTO EXPORTER
   mqtt_exporter:
-    image: sapcc/mosquitto-exporter
+    image: sapcc/mosquitto-exporter:0.5.0
     container_name: mosquitto-exporter
     networks:
       - iot-big-data
@@ -35,10 +35,11 @@ services:
 
   ##### FLINK #####
   flink_jobmanager:
-    image: flink:1.7.1-alpine
+    build: ./flink
     container_name: jobmanager
     expose:
       - 6123
+      - 9249
     ports:
       - 8081:8081
     networks:
@@ -48,10 +49,11 @@ services:
       - JOB_MANAGER_RPC_ADDRESS=jobmanager
 
   flink_taskmanager:
-    image: flink:1.7.1-alpine
+    build: ./flink
     expose:
       - 6121
       - 6122
+      - 9249
     networks:
       - iot-big-data
     depends_on:
@@ -184,13 +186,15 @@ services:
       - iot-big-data
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-      - ./prometheus/flink.rules.yml:/etc/prometheus/flink.rules.yml
+    #  - ./prometheus/flink.rules.yml:/etc/prometheus/flink.rules.yml
 
   grafana:
     image: grafana/grafana:5.4.3
     container_name: grafana
     ports:
       - 3000:3000
+    networks:
+      - iot-big-data
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=password
     volumes:

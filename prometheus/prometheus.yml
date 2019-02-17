@@ -14,3 +14,11 @@ scrape_configs:
   - job_name: 'mosquitto'
     static_configs:
       - targets: ['mosquitto-exporter:9234']
+
+  - job_name: 'flink-jobmanager'
+    static_configs:
+      - targets: ['jobmanager:9249']
+
+  - job_name: 'flink-taskmanager1'
+    static_configs:
+      - targets: ['bigdataincidentanalytics_flink_taskmanager_1:9249']
