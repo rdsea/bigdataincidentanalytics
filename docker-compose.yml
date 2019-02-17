@@ -161,6 +161,17 @@ services:
       - elk
       - iot-big-data
 
+  elasticsearch_exporter:
+    image: justwatch/elasticsearch_exporter:1.0.2
+    container_name: elasticsearch-exporter
+    command: -es.uri=http://elasticsearch:9200
+    restart: always
+    ports:
+      - 9108:9108
+    networks:
+      - elk
+      - iot-big-data
+
   kibana:
     build:
       context: kibana/
@@ -186,7 +197,6 @@ services:
       - iot-big-data
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
-    #  - ./prometheus/flink.rules.yml:/etc/prometheus/flink.rules.yml
 
   grafana:
     image: grafana/grafana:5.4.3
