@@ -32,6 +32,8 @@ services:
       - 9234:9234
     environment:
       - BROKER_ENDPOINT=tcp://mqtt:1883
+    depends_on:
+      - mqtt
 
   ##### FLINK #####
   flink_jobmanager:
@@ -64,12 +66,11 @@ services:
 
   ##### NIFI #####
   nifi:
-    image: apache/nifi:latest
+    build: ./nifi
     hostname: nifi
     container_name: nifi
-    domainname: iot-big-data
     volumes:
-      - ./logs:/opt/nifi/nifi-current/logs
+      - ./nifi/logs:/opt/nifi/nifi-current/logs
       - ./hadoop/config:/opt/nifi/nifi-current/hadoop
     networks:
       - iot-big-data
@@ -81,7 +82,8 @@ services:
     image: uhopper/hadoop-namenode
     hostname: namenode
     container_name: namenode
-    domainname: iot-big-data
+    expose:
+      - 8020
     networks:
       - iot-big-data
     volumes:
@@ -97,7 +99,6 @@ services:
     image: uhopper/hadoop-datanode
     hostname: datanode1
     container_name: datanode1
-    domainname: iot-big-data
     networks:
       - iot-big-data
     volumes:
@@ -110,7 +111,6 @@ services:
     image: uhopper/hadoop-resourcemanager
     hostname: resourcemanager
     container_name: resourcemanager
-    domainname: iot-big-data
     networks:
       - iot-big-data
     environment:
@@ -124,7 +124,6 @@ services:
     image: uhopper/hadoop-nodemanager
     hostname: nodemanager1
     container_name: nodemanager1
-    domainname: iot-big-data
     networks:
       - iot-big-data
     environment:
@@ -134,6 +133,7 @@ services:
       - YARN_CONF_yarn_nodemanager_remote___app___log___dir=/app-logs
       - HDFS_CONF_dfs_permissions=false
 
+  ##### Node-RED #####
   nodered:
     image: nodered/node-red-docker:slim
     ports:
@@ -171,6 +171,8 @@ services:
     networks:
       - elk
       - iot-big-data
+    depends_on:
+      - elasticsearch
 
   kibana:
     build:
@@ -188,6 +190,7 @@ services:
     depends_on:
       - elasticsearch
 
+  ##### PROMETHEUS #####
   prometheus:
     image: prom/prometheus:v2.7.1
     container_name: prometheus
@@ -198,6 +201,15 @@ services:
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
 
+  pushgateway:
+    image: prom/pushgateway
+    container_name: pushgateway
+    ports:
+      - 9091:9091
+    networks:
+      - iot-big-data
+
+  ##### GRAFANA #####
   grafana:
     image: grafana/grafana:5.4.3
     container_name: grafana
