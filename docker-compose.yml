@@ -2,10 +2,11 @@ version: '3.4'
 
 x-fluentd-logging:
   &custom-logging
-  driver: fluentd
-  options:
-    fluentd-address: localhost:24224
-    tag: docker.{{.Name}}
+  logging:
+    driver: fluentd
+    options:
+      fluentd-address: localhost:24224
+      tag: docker.{{.Name}}
 
 services:
 
@@ -17,8 +18,7 @@ services:
     volumes:
       - ./sensors/simplesensor:/var/config
     command: npm start -- -c /var/config/config.json
-    logging:
-      << : *custom-logging
+    << : *custom-logging
 
   ##### MQTT Broker #####
   mqtt:
@@ -30,6 +30,7 @@ services:
     ports:
       - 1883:1883
       - 9001:9001
+    << : *custom-logging
 
   ##### FLINK #####
   flink_jobmanager:
@@ -45,6 +46,7 @@ services:
     command: jobmanager
     environment:
       - JOB_MANAGER_RPC_ADDRESS=jobmanager
+    << : *custom-logging
 
   flink_taskmanager:
     build: ./flink
@@ -59,6 +61,7 @@ services:
     command: taskmanager
     environment:
       - JOB_MANAGER_RPC_ADDRESS=jobmanager
+    << : *custom-logging
 
   ##### NIFI #####
   nifi:
@@ -72,6 +75,7 @@ services:
       - iot-big-data
     ports:
       - 8080:8080
+    << : *custom-logging
 
   ##### HADOOP #####
   namenode:
@@ -90,6 +94,7 @@ services:
       - CLUSTER_NAME=myCluster
     ports:
       - 50070:50070
+    << : *custom-logging
 
   datanode1:
     image: uhopper/hadoop-datanode
@@ -102,6 +107,7 @@ services:
     environment:
       - CORE_CONF_fs_defaultFS=hdfs://namenode:8020
       - HDFS_CONF_dfs_permissions=false
+    << : *custom-logging
 
   resourcemanager:
     image: uhopper/hadoop-resourcemanager
@@ -115,6 +121,7 @@ services:
       - HDFS_CONF_dfs_permissions=false
     ports:
       - 8088:8088
+    << : *custom-logging
 
   nodemanager1:
     image: uhopper/hadoop-nodemanager
@@ -128,6 +135,7 @@ services:
       - YARN_CONF_yarn_log___aggregation___enable=true
       - YARN_CONF_yarn_nodemanager_remote___app___log___dir=/app-logs
       - HDFS_CONF_dfs_permissions=false
+    << : *custom-logging
 
   ##### Node-RED #####
   nodered:
@@ -138,6 +146,7 @@ services:
       - iot-big-data
     volumes:
       - ./nodered:/data
+    << : *custom-logging
 
   ##### ELK Stack #####
   elasticsearch:
@@ -175,6 +184,7 @@ services:
 
   fluentd:
     build: ./fluentd
+    container_name: fluentd
     volumes:
       - ./fluentd/conf:/fluentd/etc
     networks:
