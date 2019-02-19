@@ -22,19 +22,6 @@ services:
       - 1883:1883
       - 9001:9001
 
-  ##### PROMETHEUS MOSQUITTO EXPORTER #####
-  mqtt_exporter:
-    image: sapcc/mosquitto-exporter:0.5.0
-    container_name: mosquitto-exporter
-    networks:
-      - iot-big-data
-    ports:
-      - 9234:9234
-    environment:
-      - BROKER_ENDPOINT=tcp://mqtt:1883
-    depends_on:
-      - mqtt
-
   ##### FLINK #####
   flink_jobmanager:
     build: ./flink
@@ -95,13 +82,6 @@ services:
     ports:
       - 50070:50070
 
-  namenode_exporter:
-    image: danielfuvesi/bigdataincidentanalytics:hadoop-namenode-exporter
-    container_name: hadoop-namenode-exporter
-    networks:
-      - iot-big-data
-    command: -namenode.jmx.url "http://namenode:50070/jmx"
-
   datanode1:
     image: uhopper/hadoop-datanode
     hostname: datanode1
@@ -126,13 +106,6 @@ services:
       - HDFS_CONF_dfs_permissions=false
     ports:
       - 8088:8088
-
-  resourcemanager_exporter:
-    image: danielfuvesi/bigdataincidentanalytics:hadoop-resourcemanager-exporter
-    container_name: hadoop-resourcemanager-exporter
-    networks:
-      - iot-big-data
-    command: -resourcemanager.url "http://resourcemanager:8088"
 
   nodemanager1:
     image: uhopper/hadoop-nodemanager
@@ -174,18 +147,6 @@ services:
     networks:
       - iot-big-data
 
-  elasticsearch_exporter:
-    image: justwatch/elasticsearch_exporter:1.0.2
-    container_name: elasticsearch-exporter
-    command: -es.uri=http://elasticsearch:9200
-    restart: always
-    ports:
-      - 9108:9108
-    networks:
-      - iot-big-data
-    depends_on:
-      - elasticsearch
-
   kibana:
     build:
       context: kibana/
@@ -201,7 +162,9 @@ services:
     depends_on:
       - elasticsearch
 
-  ##### PROMETHEUS #####
+  #################################### SERVICES FOR MONITORING ####################################
+
+  # PROMETHEUS
   prometheus:
     image: prom/prometheus:v2.7.1
     container_name: prometheus
@@ -214,6 +177,7 @@ services:
     depends_on:
       - cadvisor
 
+  # PROMETHEUS "PUSH" CAPABILITY
   pushgateway:
     image: prom/pushgateway
     container_name: pushgateway
@@ -222,7 +186,7 @@ services:
     networks:
       - iot-big-data
 
-  ##### CONTAINER ADVISOR #####
+  # CONTAINER ADVISOR
   cadvisor:
     image: google/cadvisor:latest
     container_name: cadvisor
@@ -236,7 +200,49 @@ services:
       - /sys:/sys:ro
       - /var/lib/docker/:/var/lib/docker:ro
 
-  ##### GRAFANA #####
+  # MOSQUITTO PROMETHEUS EXPORTER
+  mqtt_exporter:
+    image: sapcc/mosquitto-exporter:0.5.0
+    container_name: mosquitto-exporter
+    networks:
+      - iot-big-data
+    ports:
+      - 9234:9234
+    environment:
+      - BROKER_ENDPOINT=tcp://mqtt:1883
+    depends_on:
+      - mqtt
+
+  # HADOOP NAMENODE PROMETHEUS EXPORTER
+  namenode_exporter:
+    image: danielfuvesi/bigdataincidentanalytics:hadoop-namenode-exporter
+    container_name: hadoop-namenode-exporter
+    networks:
+      - iot-big-data
+    command: -namenode.jmx.url "http://namenode:50070/jmx"
+
+  # HADOOP RESOURCEMANAGER PROMETHEUS EXPORTER
+  resourcemanager_exporter:
+    image: danielfuvesi/bigdataincidentanalytics:hadoop-resourcemanager-exporter
+    container_name: hadoop-resourcemanager-exporter
+    networks:
+      - iot-big-data
+    command: -resourcemanager.url "http://resourcemanager:8088"
+
+  # ELASTICSEARCH PROMETHEUS EXPORTER
+  elasticsearch_exporter:
+    image: justwatch/elasticsearch_exporter:1.0.2
+    container_name: elasticsearch-exporter
+    command: -es.uri=http://elasticsearch:9200
+    restart: always
+    ports:
+      - 9108:9108
+    networks:
+      - iot-big-data
+    depends_on:
+      - elasticsearch
+
+  # GRAFANA FOR DISPLAYING METRICS
   grafana:
     image: grafana/grafana:5.4.3
     container_name: grafana
