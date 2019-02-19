@@ -1,4 +1,4 @@
-version: '2.4'
+version: '3.2'
 
 services:
 
@@ -22,7 +22,7 @@ services:
       - 1883:1883
       - 9001:9001
 
-  ##### PROMETHEUS MOSQUITTO EXPORTER
+  ##### PROMETHEUS MOSQUITTO EXPORTER #####
   mqtt_exporter:
     image: sapcc/mosquitto-exporter:0.5.0
     container_name: mosquitto-exporter
@@ -95,6 +95,13 @@ services:
     ports:
       - 50070:50070
 
+  namenode_exporter:
+    image: danielfuvesi/bigdataincidentanalytics:hadoop-namenode-exporter
+    container_name: hadoop-namenode-exporter
+    networks:
+      - iot-big-data
+    command: -namenode.jmx.url "http://namenode:50070/jmx"
+
   datanode1:
     image: uhopper/hadoop-datanode
     hostname: datanode1
@@ -119,6 +126,13 @@ services:
       - HDFS_CONF_dfs_permissions=false
     ports:
       - 8088:8088
+
+  resourcemanager_exporter:
+    image: danielfuvesi/bigdataincidentanalytics:hadoop-resourcemanager-exporter
+    container_name: hadoop-resourcemanager-exporter
+    networks:
+      - iot-big-data
+    command: -resourcemanager.url "http://resourcemanager:8088"
 
   nodemanager1:
     image: uhopper/hadoop-nodemanager
@@ -158,7 +172,6 @@ services:
     environment:
       ES_JAVA_OPTS: "-Xmx256m -Xms256m"
     networks:
-      - elk
       - iot-big-data
 
   elasticsearch_exporter:
@@ -169,7 +182,6 @@ services:
     ports:
       - 9108:9108
     networks:
-      - elk
       - iot-big-data
     depends_on:
       - elasticsearch
@@ -185,7 +197,6 @@ services:
     ports:
       - 5601:5601
     networks:
-      - elk
       - iot-big-data
     depends_on:
       - elasticsearch
@@ -200,6 +211,8 @@ services:
       - iot-big-data
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    depends_on:
+      - cadvisor
 
   pushgateway:
     image: prom/pushgateway
@@ -208,6 +221,20 @@ services:
       - 9091:9091
     networks:
       - iot-big-data
+
+  ##### CONTAINER ADVISOR #####
+  cadvisor:
+    image: google/cadvisor:latest
+    container_name: cadvisor
+    ports:
+      - 8082:8080
+    networks:
+      - iot-big-data
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
 
   ##### GRAFANA #####
   grafana:
@@ -224,6 +251,4 @@ services:
 
 networks:
   iot-big-data:
-    driver: bridge
-  elk:
     driver: bridge
