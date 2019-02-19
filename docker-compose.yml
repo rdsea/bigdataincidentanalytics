@@ -1,4 +1,11 @@
-version: '3.2'
+version: '3.4'
+
+x-fluentd-logging:
+  &custom-logging
+  driver: fluentd
+  options:
+    fluentd-address: localhost:24224
+    tag: docker.{{.Name}}
 
 services:
 
@@ -10,6 +17,8 @@ services:
     volumes:
       - ./sensors/simplesensor:/var/config
     command: npm start -- -c /var/config/config.json
+    logging:
+      << : *custom-logging
 
   ##### MQTT Broker #####
   mqtt:
@@ -163,6 +172,16 @@ services:
       - elasticsearch
 
   #################################### SERVICES FOR MONITORING ####################################
+
+  fluentd:
+    build: ./fluentd
+    volumes:
+      - ./fluentd/conf:/fluentd/etc
+    networks:
+      - iot-big-data
+    ports:
+      - 24224:24224
+      - 24224:24224/udp
 
   # PROMETHEUS
   prometheus:
