@@ -7,6 +7,10 @@ RUN buildDeps="sudo make gcc g++ libc-dev ruby-dev" \
  && apt-get install -y --no-install-recommends $buildDeps \
  && sudo gem install \
         fluent-plugin-elasticsearch \
+ && sudo gem install \
+         fluent-plugin-detect-exceptions \
+ && sudo gem install \
+         fluent-plugin-concat \
  && sudo gem sources --clear-all \
  && SUDO_FORCE_REMOVE=yes \
     apt-get purge -y --auto-remove \

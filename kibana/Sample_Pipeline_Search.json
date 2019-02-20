@@ -1,0 +1,32 @@
+[
+  {
+    "_id": "753e5d70-3509-11e9-9924-f5a054a2791a",
+    "_type": "index-pattern",
+    "_source": {
+      "title": "fluentd*",
+      "timeFieldName": "@timestamp",
+      "fields": "[{\"name\":\"@log_name\",\"type\":\"string\",\"count\":0,\"scripted\":false,\"searchable\":true,\"aggregatable\":false,\"readFromDocValues\":false},{\"name\":\"@log_name.keyword\",\"type\":\"string\",\"count\":0,\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":true},{\"name\":\"@timestamp\",\"type\":\"date\",\"count\":0,\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":true},{\"name\":\"_id\",\"type\":\"string\",\"count\":0,\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":false},{\"name\":\"_index\",\"type\":\"string\",\"count\":0,\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":false},{\"name\":\"_score\",\"type\":\"number\",\"count\":0,\"scripted\":false,\"searchable\":false,\"aggregatable\":false,\"readFromDocValues\":false},{\"name\":\"_source\",\"type\":\"_source\",\"count\":0,\"scripted\":false,\"searchable\":false,\"aggregatable\":false,\"readFromDocValues\":false},{\"name\":\"_type\",\"type\":\"string\",\"count\":0,\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":false},{\"name\":\"container_id\",\"type\":\"string\",\"count\":0,\"scripted\":false,\"searchable\":true,\"aggregatable\":false,\"readFromDocValues\":false},{\"name\":\"container_id.keyword\",\"type\":\"string\",\"count\":0,\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":true},{\"name\":\"container_name\",\"type\":\"string\",\"count\":3,\"scripted\":false,\"searchable\":true,\"aggregatable\":false,\"readFromDocValues\":false},{\"name\":\"container_name.keyword\",\"type\":\"string\",\"count\":0,\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":true},{\"name\":\"log\",\"type\":\"string\",\"count\":3,\"scripted\":false,\"searchable\":true,\"aggregatable\":false,\"readFromDocValues\":false},{\"name\":\"log.keyword\",\"type\":\"string\",\"count\":0,\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":true},{\"name\":\"source\",\"type\":\"string\",\"count\":0,\"scripted\":false,\"searchable\":true,\"aggregatable\":false,\"readFromDocValues\":false},{\"name\":\"source.keyword\",\"type\":\"string\",\"count\":0,\"scripted\":false,\"searchable\":true,\"aggregatable\":true,\"readFromDocValues\":true}]"
+    }
+  },
+  {
+    "_id": "25051d90-350d-11e9-9924-f5a054a2791a",
+    "_type": "search",
+    "_source": {
+      "title": "Pipeline Search",
+      "description": "",
+      "hits": 0,
+      "columns": [
+        "container_name",
+        "log"
+      ],
+      "sort": [
+        "@timestamp",
+        "desc"
+      ],
+      "version": 1,
+      "kibanaSavedObjectMeta": {
+        "searchSourceJSON": "{\"index\":\"753e5d70-3509-11e9-9924-f5a054a2791a\",\"highlightAll\":true,\"version\":true,\"query\":{\"query\":\"\",\"language\":\"lucene\"},\"filter\":[{\"query\":{\"query_string\":{\"default_field\":\"*\",\"query\":\"WARN\",\"analyze_wildcard\":true}},\"meta\":{\"negate\":false,\"index\":\"753e5d70-3509-11e9-9924-f5a054a2791a\",\"disabled\":true,\"alias\":\"Warn logs\",\"type\":\"query_string\",\"key\":\"query\",\"value\":\"WARN\"},\"$state\":{\"store\":\"appState\"}},{\"query\":{\"query_string\":{\"default_field\":\"*\",\"query\":\"ERROR\",\"analyze_wildcard\":true}},\"meta\":{\"index\":\"753e5d70-3509-11e9-9924-f5a054a2791a\",\"disabled\":true,\"alias\":\"Error logs\",\"type\":\"query_string\",\"key\":\"query\",\"value\":\"ERROR\",\"negate\":false},\"$state\":{\"store\":\"appState\"}},{\"query\":{\"query_string\":{\"default_field\":\"*\",\"query\":\"INFO\",\"analyze_wildcard\":true}},\"meta\":{\"negate\":false,\"index\":\"753e5d70-3509-11e9-9924-f5a054a2791a\",\"disabled\":true,\"alias\":\"Info logs\",\"type\":\"query_string\",\"key\":\"query\",\"value\":\"INFO\"},\"$state\":{\"store\":\"appState\"}},{\"meta\":{\"index\":\"753e5d70-3509-11e9-9924-f5a054a2791a\",\"negate\":false,\"disabled\":false,\"alias\":null,\"type\":\"phrase\",\"key\":\"container_name.keyword\",\"value\":\"/datanode1\",\"params\":{\"query\":\"/datanode1\",\"type\":\"phrase\"}},\"query\":{\"match\":{\"container_name.keyword\":{\"query\":\"/datanode1\",\"type\":\"phrase\"}}},\"$state\":{\"store\":\"appState\"}}]}"
+      }
+    }
+  }
+]

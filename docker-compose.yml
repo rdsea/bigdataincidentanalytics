@@ -182,11 +182,14 @@ services:
 
   #################################### SERVICES FOR MONITORING ####################################
 
+  # THIS SERVICE IS DEFINED JUST FOR COMPLETENESS. FLUENTD *MUST* BE STARTED ON HOST BEFORE ANY OTHER SERVICE,
+  # OTHERWISE THE OTHER CONTAINERS CAN'T START DUE TO MISSING LOGGING DRIVER.
   fluentd:
     build: ./fluentd
     container_name: fluentd
     volumes:
       - ./fluentd/conf:/fluentd/etc
+      - ./fluentd/logs:/fluentd/log/bigdataincidentanalytics
     networks:
       - iot-big-data
     ports:
@@ -249,6 +252,8 @@ services:
     networks:
       - iot-big-data
     command: -namenode.jmx.url "http://namenode:50070/jmx"
+    depends_on:
+      - namenode
 
   # HADOOP RESOURCEMANAGER PROMETHEUS EXPORTER
   resourcemanager_exporter:
@@ -257,6 +262,8 @@ services:
     networks:
       - iot-big-data
     command: -resourcemanager.url "http://resourcemanager:8088"
+    depends_on:
+      - resourcemanager
 
   # ELASTICSEARCH PROMETHEUS EXPORTER
   elasticsearch_exporter:

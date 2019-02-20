@@ -261,3 +261,5 @@ hs_err_pid*
 /nodered/*
 !/nodered/settings.js
 !/nodered/flows.json
+
+*.meta
