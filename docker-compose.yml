@@ -291,21 +291,6 @@ services:
     volumes:
     - ./grafana/provisioning/:/etc/grafana/provisioning/
 
-  packetbeat:
-    build:
-      context: packetbeat/
-      args:
-        ELK_VERSION: $ELK_VERSION
-    depends_on:
-      - elasticsearch
-    cap_add:
-      - NET_ADMIN
-    networks:
-      - iot-big-data
-    environment:
-      - OUTPUT_ELASTICSEARCH_HOSTS=["http://elasticserach:9200"]
-      - KIBANA_HOST=http://kibana:5601
-
 networks:
   iot-big-data:
     driver: bridge
