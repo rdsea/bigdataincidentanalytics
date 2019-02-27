@@ -2,6 +2,8 @@ package io.github.rdsea.flink.elastic
 
 import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
+import io.github.rdsea.flink.FLUENCY
+import io.github.rdsea.flink.FLUENTD_PREFIX
 import io.github.rdsea.flink.domain.SensorAlarmReport
 import io.github.rdsea.flink.util.LocalDateTimeJsonSerializer
 import mu.KLogging
@@ -10,6 +12,7 @@ import org.apache.flink.streaming.connectors.elasticsearch.ElasticsearchSinkFunc
 import org.apache.flink.streaming.connectors.elasticsearch.RequestIndexer
 import org.elasticsearch.action.index.IndexRequest
 import org.elasticsearch.client.Requests
+import org.komamitsu.fluency.EventTime
 import java.time.LocalDateTime
 
 /**
@@ -27,11 +30,19 @@ class ElasticSearchInsertionSinkFunction : ElasticsearchSinkFunction<SensorAlarm
         val indexRequest = createIndexRequest(element)
         logger.debug { "SINK - new IndexRequest created" }
         indexer.add(indexRequest)
+        FLUENCY.emit("$FLUENTD_PREFIX.storage",
+            EventTime.fromEpochMilli(System.currentTimeMillis()),
+            mapOf(
+                Pair("message", "Sending sensor alarm report of station ${element.stationId} to data store"),
+                Pair("stage", "output"),
+                Pair("dataId", element.id),
+                Pair("data", element)
+            )
+        )
     }
 
     private fun createIndexRequest(element: SensorAlarmReport): IndexRequest {
-        val type = object : TypeToken<Map<String, String>>() {}.type
-        val json: Map<String, String> = gson.fromJson(gson.toJson(element), type)
+        val json: Map<String, String> = gson.fromJson(gson.toJson(element), typeToken)
 
         return Requests.indexRequest()
             .index("flink-sensor-data")
@@ -43,5 +54,6 @@ class ElasticSearchInsertionSinkFunction : ElasticsearchSinkFunction<SensorAlarm
         private val gson = GsonBuilder()
             .registerTypeAdapter(LocalDateTime::class.java, LocalDateTimeJsonSerializer())
             .create()
+        private val typeToken = object : TypeToken<Map<String, String>>() {}.type
     }
 }

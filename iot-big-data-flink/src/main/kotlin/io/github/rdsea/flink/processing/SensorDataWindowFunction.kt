@@ -1,11 +1,13 @@
 package io.github.rdsea.flink.processing
 
+import io.github.rdsea.flink.FLUENCY
+import io.github.rdsea.flink.FLUENTD_PREFIX
 import io.github.rdsea.flink.domain.SensorAlarmReport
 import io.github.rdsea.flink.domain.SensorRecord
-import mu.KLogging
 import org.apache.flink.streaming.api.functions.windowing.WindowFunction
 import org.apache.flink.streaming.api.windowing.windows.GlobalWindow
 import org.apache.flink.util.Collector
+import org.komamitsu.fluency.EventTime
 
 /**
  * <h4>About this class</h4>
@@ -34,10 +36,18 @@ class SensorDataWindowFunction : WindowFunction<SensorRecord, SensorAlarmReport,
         input: MutableIterable<SensorRecord>,
         out: Collector<SensorAlarmReport>
     ) {
-        logger.info { "WindowFunction for station $key entered" }
         val records = input.iterator().asSequence().toList()
-        val result = SensorAlarmReport(key, records.size, records.map { it.sensorValue }.average())
+        val id = records.joinToString { it.id }
+        val result = SensorAlarmReport(id, key, records.size, records.map { it.sensorValue }.average())
+        FLUENCY.emit("$FLUENTD_PREFIX.aggregation",
+            EventTime.fromEpochMilli(System.currentTimeMillis()),
+            mapOf(
+                Pair("message", "Periodic aggregation of sensor station $key"),
+                Pair("stage", "processing"),
+                Pair("dataId", id),
+                Pair("data", result)
+            )
+        )
         out.collect(result)
     }
-    companion object : KLogging()
 }

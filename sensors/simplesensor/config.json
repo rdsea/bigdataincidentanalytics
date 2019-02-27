@@ -3,5 +3,11 @@
     "protocolOptions": {"topic": "customTopic"},
     "format": "json",
     "uri": "http://mqtt:1883",
-    "file": "/var/config/data.csv"
+    "file": "/var/config/data.csv",
+    "fluentd": {
+        "enabled": true,
+        "tagPrefix": "sensor",
+        "host": "fluentd",
+        "port": 24224
+    }
 }

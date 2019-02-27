@@ -1,12 +1,16 @@
 package io.github.rdsea.flink.mqtt
 
-import mu.KLogging
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import io.github.rdsea.flink.FLUENCY
+import io.github.rdsea.flink.FLUENTD_PREFIX
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.streaming.api.functions.source.RichSourceFunction
 import org.apache.flink.streaming.api.functions.source.SourceFunction
 import org.fusesource.mqtt.client.MQTT
 import org.fusesource.mqtt.client.QoS
 import org.fusesource.mqtt.client.Topic
+import org.komamitsu.fluency.EventTime
 import java.net.URI
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -37,24 +41,36 @@ class MqttSource(
         val blockingConnection = mqtt.blockingConnection()
         blockingConnection.connect()
         blockingConnection.subscribe(arrayOf(Topic(topic, QoS.AT_LEAST_ONCE)))
-
-        logger.info { "Connected to MQTT source" }
+        FLUENCY.emit("$FLUENTD_PREFIX.mqtt", mapOf(Pair("message", "connected to MQTT source")))
         while (blockingConnection.isConnected && !interrupted.get()) {
             val message = blockingConnection.receive()
-            logger.debug { "MQTT message received" }
             val mqttMessage = MqttMessage(message.topic, String(message.payload))
+            val json: Map<String, String> = gson.fromJson(mqttMessage.payload, typeToken)
+            FLUENCY.emit("$FLUENTD_PREFIX.mqtt",
+                EventTime.fromEpochMilli(System.currentTimeMillis()),
+                mapOf(
+                    Pair("message", "MQTT message received"),
+                    Pair("stage", "input"),
+                    Pair("dataId", json["id"]),
+                    Pair("topic", mqttMessage.topic),
+                    Pair("payload", json)
+                )
+            )
             message.ack()
             ctx.collect(mqttMessage)
         }
 
         blockingConnection.disconnect()
-        logger.info { "Disconnected from MQTT source" }
+        FLUENCY.emit("$FLUENTD_PREFIX.mqtt", mapOf(Pair("message", "Disconnected from MQTT source")))
     }
 
     override fun cancel() {
         interrupted.set(true)
-        logger.info { "Source cancelled" }
+        FLUENCY.emit("$FLUENTD_PREFIX.mqtt", mapOf(Pair("message", "Connection cancelled")))
     }
 
-    companion object : KLogging()
+    companion object {
+        private val gson = Gson()
+        private val typeToken = object : TypeToken<Map<String, String>>() {}.type
+    }
 }

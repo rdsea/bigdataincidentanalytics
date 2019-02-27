@@ -7,6 +7,8 @@ import io.github.rdsea.flink.processing.SensorDataWindowFunction
 import io.github.rdsea.flink.processing.SensorRecordKeySelector
 import io.github.rdsea.flink.util.Configuration
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment
+import org.komamitsu.fluency.Fluency
+import org.komamitsu.fluency.fluentd.FluencyBuilderForFluentd
 import java.lang.IllegalArgumentException
 import java.net.URI
 
@@ -19,6 +21,9 @@ import java.net.URI
  * @version 1.0.0
  * @since 1.0.0
  */
+val FLUENTD_PREFIX = System.getenv("FLUENTD_TAG_PREFIX") ?: "flink-processing"
+val FLUENCY: Fluency = FluencyBuilderForFluentd()
+    .build(System.getenv("FLUENTD_HOST") ?: "localhost", System.getenv("FLUENTD_PORT")?.toInt() ?: 24224)
 class Main {
 
     companion object {

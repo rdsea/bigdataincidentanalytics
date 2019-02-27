@@ -61,6 +61,9 @@ services:
     command: taskmanager
     environment:
       - JOB_MANAGER_RPC_ADDRESS=jobmanager
+      - FLUENTD_TAG_PREFIX=flink-processing
+      - FLUENTD_HOST=fluentd
+      - FLUENTD_PORT=24224
     << : *custom-logging
 
   ##### NIFI #####

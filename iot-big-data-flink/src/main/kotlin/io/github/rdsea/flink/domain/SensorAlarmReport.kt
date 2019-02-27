@@ -10,6 +10,7 @@ package io.github.rdsea.flink.domain
  * @since 1.0.0
  */
 data class SensorAlarmReport(
+    val id: String,
     val stationId: String,
     val numberOfAlarms: Int,
     val averageSensorValue: Double
