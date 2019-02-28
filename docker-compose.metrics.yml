@@ -1,0 +1,97 @@
+version: '3.4'
+
+services:
+
+  # PROMETHEUS
+  prometheus:
+    image: prom/prometheus:v2.7.1
+    container_name: prometheus
+    ports:
+      - 9090:9090
+    networks:
+      - iot-big-data
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+    depends_on:
+      - cadvisor
+
+  # PROMETHEUS "PUSH" CAPABILITY
+  pushgateway:
+    image: prom/pushgateway
+    container_name: pushgateway
+    ports:
+      - 9091:9091
+    networks:
+      - iot-big-data
+
+  # CONTAINER ADVISOR
+  cadvisor:
+    image: google/cadvisor:latest
+    container_name: cadvisor
+    ports:
+      - 8082:8080
+    networks:
+      - iot-big-data
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:rw
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+
+  # MOSQUITTO PROMETHEUS EXPORTER
+  mqtt_exporter:
+    image: sapcc/mosquitto-exporter:0.5.0
+    container_name: mosquitto-exporter
+    restart: always
+    networks:
+      - iot-big-data
+    ports:
+      - 9234:9234
+    environment:
+      - BROKER_ENDPOINT=tcp://mqtt:1883
+
+  # HADOOP NAMENODE PROMETHEUS EXPORTER
+  namenode_exporter:
+    image: danielfuvesi/bigdataincidentanalytics:hadoop-namenode-exporter
+    container_name: hadoop-namenode-exporter
+    restart: always
+    networks:
+      - iot-big-data
+    command: -namenode.jmx.url "http://namenode:50070/jmx"
+
+  # HADOOP RESOURCEMANAGER PROMETHEUS EXPORTER
+  resourcemanager_exporter:
+    image: danielfuvesi/bigdataincidentanalytics:hadoop-resourcemanager-exporter
+    container_name: hadoop-resourcemanager-exporter
+    networks:
+      - iot-big-data
+    command: -resourcemanager.url "http://resourcemanager:8088"
+
+  # ELASTICSEARCH PROMETHEUS EXPORTER
+  elasticsearch_exporter:
+    image: justwatch/elasticsearch_exporter:1.0.2
+    container_name: elasticsearch-exporter
+    command: -es.uri=http://elasticsearch:9200
+    restart: always
+    ports:
+      - 9108:9108
+    networks:
+      - iot-big-data
+
+  # GRAFANA FOR DISPLAYING METRICS
+  grafana:
+    image: grafana/grafana:5.4.3
+    container_name: grafana
+    restart: always
+    ports:
+      - 3000:3000
+    networks:
+      - iot-big-data
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=password
+    volumes:
+      - ./grafana/provisioning/:/etc/grafana/provisioning/
+
+networks:
+  iot-big-data:
+    driver: bridge
