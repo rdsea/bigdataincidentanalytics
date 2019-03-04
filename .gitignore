@@ -256,12 +256,12 @@ yarn-error.log*
 
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
-/hadoop/config/hdfs-site.xml
-/hadoop/config/core-site.xml
-/nodered/*
-!/nodered/settings.js
-!/nodered/flows.json
-/neo4j/data/*
+/pipeline/hadoop/config/hdfs-site.xml
+/pipeline/hadoop/config/core-site.xml
+/pipeline/nodered/*
+!/pipeline/nodered/settings.js
+!/pipeline/nodered/flows.json
+/monitoring/constraints/data/*
 
 *.meta
 !gradle-wrapper.jar

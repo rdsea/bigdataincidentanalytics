@@ -89,7 +89,7 @@ services:
   ##### ELK Stack #####
   elasticsearch:
     build:
-      context: elasticsearch/
+      context: pipeline/elk/elasticsearch/
       args:
         ELK_VERSION: $ELK_VERSION
     container_name: elasticsearch
@@ -106,7 +106,7 @@ services:
 
   logstash:
     build:
-      context: logstash/
+      context: pipeline/elk/logstash/
       args:
         ELK_VERSION: $ELK_VERSION
     container_name: logstash
@@ -127,7 +127,7 @@ services:
 
   kibana:
     build:
-      context: kibana/
+      context: pipeline/elk/kibana/
       args:
         ELK_VERSION: $ELK_VERSION
     container_name: kibana

@@ -16,7 +16,7 @@ services:
     networks:
       - iot-big-data
     volumes:
-      - ./sensors/simplesensor:/var/config
+      - ./pipeline/sensors/simplesensor:/var/config
     command: npm start -- -c /var/config/config.json
     << : *custom-logging
 
@@ -34,7 +34,7 @@ services:
 
   ##### FLINK #####
   flink_jobmanager:
-    build: ./flink
+    build: pipeline/flink
     container_name: jobmanager
     expose:
       - 6123
@@ -49,7 +49,7 @@ services:
     << : *custom-logging
 
   flink_taskmanager:
-    build: ./flink
+    build: pipeline/flink
     expose:
       - 6121
       - 6122
@@ -68,12 +68,12 @@ services:
 
   ##### NIFI #####
   nifi:
-    build: ./nifi
+    build: pipeline/nifi
     hostname: nifi
     container_name: nifi
     volumes:
-      - ./nifi/logs:/opt/nifi/nifi-current/logs
-      - ./hadoop/config:/opt/nifi/nifi-current/hadoop
+      - ./pipeline/nifi/logs:/opt/nifi/nifi-current/logs
+      - ./pipeline/hadoop/config:/opt/nifi/nifi-current/hadoop
     networks:
       - iot-big-data
     ports:
@@ -91,7 +91,7 @@ services:
       - iot-big-data
     volumes:
       - /hadoop/dfs/name
-      - ./hadoop/hadoop_setup.sh:/usr/local/bin/hadoop_setup.sh
+      - ./pipeline/hadoop/hadoop_setup.sh:/usr/local/bin/hadoop_setup.sh
     command: hadoop_setup.sh
     environment:
       - CLUSTER_NAME=myCluster
@@ -148,18 +148,18 @@ services:
     networks:
       - iot-big-data
     volumes:
-      - ./nodered:/data
+      - ./pipeline/nodered:/data
     << : *custom-logging
 
   ##### ELK Stack #####
   elasticsearch:
     build:
-      context: elasticsearch/
+      context: pipeline/elk/elasticsearch/
       args:
         ELK_VERSION: $ELK_VERSION
     container_name: elasticsearch
     volumes:
-      - ./elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
+      - ./pipeline/elk/elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
     ports:
       - 9200:9200
       - 9300:9300
@@ -170,12 +170,12 @@ services:
 
   kibana:
     build:
-      context: kibana/
+      context: pipeline/elk/kibana/
       args:
         ELK_VERSION: $ELK_VERSION
     container_name: kibana
     volumes:
-      - ./kibana/config/:/usr/share/kibana/config:ro
+      - ./pipeline/elk/kibana/config/:/usr/share/kibana/config:ro
     ports:
       - 5601:5601
     networks:
@@ -186,11 +186,11 @@ services:
   # THIS SERVICE IS DEFINED JUST FOR COMPLETENESS. FLUENTD *MUST* BE STARTED ON HOST BEFORE ANY OTHER SERVICE,
   # OTHERWISE THE OTHER CONTAINERS CAN'T START DUE TO MISSING LOGGING DRIVER.
   fluentd:
-    build: ./fluentd
+    build: logging/fluentd
     container_name: fluentd
     volumes:
-      - ./fluentd/conf:/fluentd/etc
-      - ./fluentd/logs:/fluentd/log/bigdataincidentanalytics
+      - ./logging/fluentd/conf:/fluentd/etc
+      - ./logging/fluentd/logs:/fluentd/log/bigdataincidentanalytics
     networks:
       - iot-big-data
     ports:
@@ -201,15 +201,13 @@ services:
   # Just for showcasing different situations regarding monitoring and reasoning
   neo4j:
     build:
-      context: neo4j/
+      context: monitoring/constraints/
       args:
         CYPHER_FILE: database.cypher
     container_name: neo4j
     restart: always
     networks:
       - iot-big-data
-    volumes:
-      - ./neo4j/data:/logs
     ports:
       - 7474:7474
       - 7687:7687

@@ -11,7 +11,7 @@ services:
     networks:
       - iot-big-data
     volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
     depends_on:
       - cadvisor
 
@@ -90,7 +90,7 @@ services:
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=password
     volumes:
-      - ./grafana/provisioning/:/etc/grafana/provisioning/
+      - ./monitoring/grafana/provisioning/:/etc/grafana/provisioning/
 
 networks:
   iot-big-data:
