@@ -256,8 +256,8 @@ yarn-error.log*
 
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
-/pipeline/hadoop/config/hdfs-site.xml
-/pipeline/hadoop/config/core-site.xml
+#/pipeline/hadoop/config/hdfs-site.xml
+#/pipeline/hadoop/config/core-site.xml
 /pipeline/nodered/*
 !/pipeline/nodered/settings.js
 !/pipeline/nodered/flows.json

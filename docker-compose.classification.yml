@@ -12,7 +12,7 @@ services:
       - iot-big-data
     volumes:
       - /hadoop/dfs/name
-      - ./hadoop_setup.sh:/usr/local/bin/hadoop_setup.sh
+      - ./pipeline/hadoop_setup.sh:/usr/local/bin/hadoop_setup.sh
     command: hadoop_setup.sh
     environment:
       - CLUSTER_NAME=myCluster
@@ -67,8 +67,8 @@ services:
     container_name: nifi
     domainname: iot-big-data
     volumes:
-      - $PWD/logs:/opt/nifi/nifi-current/logs
-      - $PWD/hadoop/config:/opt/nifi/nifi-current/hadoop
+      - ./pipeline/nifi/logs:/opt/nifi/nifi-current/logs
+      - ./pipeline/hadoop/config:/opt/nifi/nifi-current/hadoop
     networks:
       - iot-big-data
     ports:
@@ -94,7 +94,7 @@ services:
         ELK_VERSION: $ELK_VERSION
     container_name: elasticsearch
     volumes:
-      - ./elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
+      - ./pipeline/elk/elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
     ports:
       - 9200:9200
       - 9300:9300
@@ -111,9 +111,9 @@ services:
         ELK_VERSION: $ELK_VERSION
     container_name: logstash
     volumes:
-      - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
-      - ./logstash/pipeline:/usr/share/logstash/pipeline:ro
-      - $PWD/logs:/usr/share/logstash/nifi/logs
+      - ./pipeline/elk/logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
+      - ./pipeline/elk/logstash/pipeline:/usr/share/logstash/pipeline:ro
+      - ./pipeline/nifi/logs:/usr/share/logstash/nifi/logs
     ports:
       - 5000:5000
       - 9600:9600
@@ -132,7 +132,7 @@ services:
         ELK_VERSION: $ELK_VERSION
     container_name: kibana
     volumes:
-      - ./kibana/config/:/usr/share/kibana/config:ro
+      - ./pipeline/elk/kibana/config/:/usr/share/kibana/config:ro
     ports:
       - 5601:5601
     networks:
