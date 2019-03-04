@@ -1,0 +1,70 @@
+﻿node {
+  diameter: 50px;
+  color: #A5ABB6;
+  border-color: #9AA1AC;
+  border-width: 2px;
+  text-color-internal: #FFFFFF;
+  font-size: 10px;
+}
+relationship {
+  color: #A5ABB6;
+  shaft-width: 1px;
+  font-size: 8px;
+  padding: 3px;
+  text-color-external: #000000;
+  text-color-internal: #FFFFFF;
+  caption: "<type>";
+}
+node.* {
+  color: #C990C0;
+  border-color: #b261a5;
+  text-color-internal: #FFFFFF;
+  defaultCaption: "<id>";
+}
+node.Element {
+  color: #FFE081;
+  border-color: #9AA1AC;
+  text-color-internal: #000000;
+  defaultCaption: "<id>";
+  caption: "{name}";
+  diameter: 65px;
+}
+node.Control {
+  caption: "{name}";
+}
+node.PartialControl {
+  caption: "{name}";
+}
+node.Layer {
+  caption: "{name}";
+}
+node.Incident {
+  caption: "{name}";
+  color: #F79767;
+  border-color: #f36924;
+  text-color-internal: #FFFFFF;
+}
+node.MonitoringInformation {
+  caption: "{name}";
+  color: #C990C0;
+  border-color: #b261a5;
+  text-color-internal: #FFFFFF;
+}
+node.PipeLineComp {
+  caption: "{name}";
+  color: #57C7E3;
+  border-color: #23b3d7;
+  text-color-internal: #FFFFFF;
+}
+node.Ownership {
+  caption: "{name}";
+  color: #DA7194;
+  border-color: #cc3c6c;
+  text-color-internal: #FFFFFF;
+}
+node.PartialOwnership {
+  caption: "{name}";
+  color: #8DCC93;
+  border-color: #5db665;
+  text-color-internal: #604A0E;
+}
