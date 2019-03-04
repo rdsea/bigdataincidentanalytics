@@ -261,5 +261,7 @@ hs_err_pid*
 /nodered/*
 !/nodered/settings.js
 !/nodered/flows.json
+/neo4j/data/*
 
 *.meta
+!gradle-wrapper.jar

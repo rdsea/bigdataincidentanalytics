@@ -198,6 +198,22 @@ services:
       - 24224:24224/udp
       - 9880:9880
 
+  # Just for showcasing different situations regarding monitoring and reasoning
+  neo4j:
+    build:
+      context: neo4j/
+      args:
+        CYPHER_FILE: database.cypher
+    container_name: neo4j
+    restart: always
+    networks:
+      - iot-big-data
+    volumes:
+      - ./neo4j/data:/logs
+    ports:
+      - 7474:7474
+      - 7687:7687
+
 networks:
   iot-big-data:
     driver: bridge
