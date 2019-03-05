@@ -10,7 +10,7 @@ x-fluentd-logging:
 
 services:
 
-  ##### IoT Sensors #####
+  ##### IoT SENSORS #####
   simplesensor:
     image: danielfuvesi/bigdataincidentanalytics:simplesensor
     networks:
@@ -20,7 +20,7 @@ services:
     command: npm start -- -c /var/config/config.json
     << : *custom-logging
 
-  ##### MQTT Broker #####
+  ##### MQTT BROKER #####
   mqtt:
     image: eclipse-mosquitto
     container_name: mqtt
@@ -32,7 +32,7 @@ services:
       - 9001:9001
     << : *custom-logging
 
-  ##### FLINK #####
+  ##### APACHE FLINK #####
   flink_jobmanager:
     build: pipeline/flink
     container_name: jobmanager
@@ -66,7 +66,7 @@ services:
       - FLUENTD_PORT=24224
     << : *custom-logging
 
-  ##### NIFI #####
+  ##### APACHE NIFI #####
   nifi:
     build: pipeline/nifi
     hostname: nifi
@@ -80,7 +80,7 @@ services:
       - 8080:8080
     << : *custom-logging
 
-  ##### HADOOP #####
+  ##### APACHE HADOOP #####
   namenode:
     image: uhopper/hadoop-namenode
     hostname: namenode
@@ -151,7 +151,7 @@ services:
       - ./pipeline/nodered:/data
     << : *custom-logging
 
-  ##### ELK Stack #####
+  ##### ELK STACK #####
   elasticsearch:
     build:
       context: pipeline/elk/elasticsearch/
@@ -182,6 +182,40 @@ services:
       - iot-big-data
     depends_on:
       - elasticsearch
+
+  ##### APACHE SPARK #####
+  spark-master:
+    image: bde2020/spark-master:2.4.0-hadoop2.8
+    container_name: spark-master
+    ports:
+      - 8082:8080
+      - 7077:7077
+    environment:
+      - ENABLE_INIT_DAEMON=false
+      - "constraint:node==master"
+    volumes:
+      - ./pipeline/hadoop/config/core-site.xml:/etc/hadoop/core-site.xml
+      - ./pipeline/hadoop/config/hdfs-site.xml:/etc/hadoop/hdfs-site.xml
+      - ./pipeline/spark/config/spark-env.sh:/spark/conf/spark-env.sh
+    networks:
+      - iot-big-data
+
+  spark-worker:
+    image: bde2020/spark-worker:2.4.0-hadoop2.8
+    depends_on:
+      - spark-master
+    ports:
+      - 8081
+    environment:
+      - SPARK_MASTER=spark://spark-master:7077
+      - ENABLE_INIT_DAEMON=false
+      - "constraint:node==master"
+    volumes:
+      - ./pipeline/hadoop/config/core-site.xml:/etc/hadoop/core-site.xml
+      - ./pipeline/hadoop/config/hdfs-site.xml:/etc/hadoop/hdfs-site.xml
+      - ./pipeline/spark/config/spark-env.sh:/spark/conf/spark-env.sh
+    networks:
+      - iot-big-data
 
   # THIS SERVICE IS DEFINED JUST FOR COMPLETENESS. FLUENTD *MUST* BE STARTED ON HOST BEFORE ANY OTHER SERVICE,
   # OTHERWISE THE OTHER CONTAINERS CAN'T START DUE TO MISSING LOGGING DRIVER.
