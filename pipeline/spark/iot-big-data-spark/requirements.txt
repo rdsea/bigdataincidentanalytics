@@ -1,0 +1,7 @@
+wheel
+msgpack-python
+fluent-logger
+fluent
+numpy
+pyspark
+future

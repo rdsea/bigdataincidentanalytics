@@ -199,6 +199,7 @@ services:
       - ./pipeline/spark/config/spark-env.sh:/spark/conf/spark-env.sh
     networks:
       - iot-big-data
+    << : *custom-logging
 
   spark-worker:
     image: bde2020/spark-worker:2.4.0-hadoop2.8
@@ -214,6 +215,26 @@ services:
       - ./pipeline/hadoop/config/core-site.xml:/etc/hadoop/core-site.xml
       - ./pipeline/hadoop/config/hdfs-site.xml:/etc/hadoop/hdfs-site.xml
       - ./pipeline/spark/config/spark-env.sh:/spark/conf/spark-env.sh
+    networks:
+      - iot-big-data
+    << : *custom-logging
+
+  spark-app:
+    build: pipeline/spark/iot-big-data-spark
+    container_name: spark-app
+    ports:
+      - 4040
+    depends_on:
+      - spark-master
+      - spark-worker
+    environment:
+      - ENABLE_INIT_DAEMON=false
+      - SPARK_MASTER_NAME=spark-master
+      - SPARK_MASTER_PORT=7077
+      - FLUENTD_TAG_PREFIX=spark-kmeans
+      - FLUENTD_HOST=fluentd
+      - FLUENTD_PORT=24224
+      - HDFS_URL=hdfs://namenode:8020/nifi
     networks:
       - iot-big-data
 
