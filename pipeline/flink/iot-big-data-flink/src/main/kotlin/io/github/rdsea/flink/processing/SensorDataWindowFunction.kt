@@ -42,7 +42,7 @@ class SensorDataWindowFunction : WindowFunction<SensorRecord, SensorAlarmReport,
         FLUENCY.emit("$FLUENTD_PREFIX.aggregation",
             EventTime.fromEpochMilli(System.currentTimeMillis()),
             mapOf(
-                Pair("message", "Periodic aggregation of sensor station $key"),
+                Pair("log", "Periodic aggregation of sensor station $key"),
                 Pair("stage", "processing"),
                 Pair("dataId", id),
                 Pair("data", result)

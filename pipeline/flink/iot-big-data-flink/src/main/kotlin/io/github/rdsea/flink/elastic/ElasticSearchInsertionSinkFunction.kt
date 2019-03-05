@@ -33,7 +33,7 @@ class ElasticSearchInsertionSinkFunction : ElasticsearchSinkFunction<SensorAlarm
         FLUENCY.emit("$FLUENTD_PREFIX.storage",
             EventTime.fromEpochMilli(System.currentTimeMillis()),
             mapOf(
-                Pair("message", "Sending sensor alarm report of station ${element.stationId} to data store"),
+                Pair("log", "Sending sensor alarm report of station ${element.stationId} to data store"),
                 Pair("stage", "output"),
                 Pair("dataId", element.id),
                 Pair("data", element)
