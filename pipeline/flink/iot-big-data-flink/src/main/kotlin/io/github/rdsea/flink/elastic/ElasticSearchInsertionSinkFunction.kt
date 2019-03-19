@@ -4,7 +4,9 @@ import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
 import io.github.rdsea.flink.FLUENCY
 import io.github.rdsea.flink.FLUENTD_PREFIX
+import io.github.rdsea.flink.domain.Provenance
 import io.github.rdsea.flink.domain.SensorAlarmReport
+import io.github.rdsea.flink.domain.withProv
 import io.github.rdsea.flink.util.LocalDateTimeJsonSerializer
 import mu.KLogging
 import org.apache.flink.api.common.functions.RuntimeContext
@@ -27,22 +29,21 @@ import java.time.LocalDateTime
 class ElasticSearchInsertionSinkFunction : ElasticsearchSinkFunction<SensorAlarmReport> {
 
     override fun process(element: SensorAlarmReport, ctx: RuntimeContext, indexer: RequestIndexer) {
-        val indexRequest = createIndexRequest(element)
+        val reportWithProv = element.withProv(createDataProvenance(element))
+        val indexRequest = createIndexRequest(reportWithProv)
         logger.debug { "SINK - new IndexRequest created" }
         indexer.add(indexRequest)
         FLUENCY.emit("$FLUENTD_PREFIX.storage",
             EventTime.fromEpochMilli(System.currentTimeMillis()),
             mapOf(
-                Pair("log", "Sending sensor alarm report of station ${element.stationId} to data store"),
-                Pair("stage", "output"),
-                Pair("dataId", element.id),
-                Pair("data", element)
+                Pair("log", "Sending sensor alarm report of station ${reportWithProv.stationId} to data store"),
+                Pair("data", reportWithProv)
             )
         )
     }
 
     private fun createIndexRequest(element: SensorAlarmReport): IndexRequest {
-        val json: Map<String, String> = gson.fromJson(gson.toJson(element), typeToken)
+        val json: Map<String, Any> = gson.fromJson(gson.toJson(element), typeToken)
 
         return Requests.indexRequest()
             .index("flink-sensor-data")
@@ -50,10 +51,19 @@ class ElasticSearchInsertionSinkFunction : ElasticsearchSinkFunction<SensorAlarm
             .source(json)
     }
 
+    private fun createDataProvenance(element: SensorAlarmReport): Provenance {
+        return Provenance(
+            previousId = "flink-${javaClass.simpleName}",
+            type = "sensorDataReport",
+            wasDerivedFrom = element.prov.previousId,
+            wasGeneratedBy = "flink-${javaClass.simpleName}"
+        )
+    }
+
     companion object : KLogging() {
         private val gson = GsonBuilder()
             .registerTypeAdapter(LocalDateTime::class.java, LocalDateTimeJsonSerializer())
             .create()
-        private val typeToken = object : TypeToken<Map<String, String>>() {}.type
+        private val typeToken = object : TypeToken<Map<String, Any>>() {}.type
     }
 }

@@ -2,6 +2,7 @@ package io.github.rdsea.flink.processing
 
 import io.github.rdsea.flink.FLUENCY
 import io.github.rdsea.flink.FLUENTD_PREFIX
+import io.github.rdsea.flink.domain.Provenance
 import io.github.rdsea.flink.domain.SensorAlarmReport
 import io.github.rdsea.flink.domain.SensorRecord
 import org.apache.flink.streaming.api.functions.windowing.WindowFunction
@@ -38,16 +39,23 @@ class SensorDataWindowFunction : WindowFunction<SensorRecord, SensorAlarmReport,
     ) {
         val records = input.iterator().asSequence().toList()
         val id = records.joinToString { it.id }
-        val result = SensorAlarmReport(id, key, records.size, records.map { it.sensorValue }.average())
+        val result = SensorAlarmReport(id, key, records.size, records.map { it.sensorValue }.average(), createDataProvenance(records))
         FLUENCY.emit("$FLUENTD_PREFIX.aggregation",
             EventTime.fromEpochMilli(System.currentTimeMillis()),
             mapOf(
                 Pair("log", "Periodic aggregation of sensor station $key"),
-                Pair("stage", "processing"),
-                Pair("dataId", id),
-                Pair("data", result)
+                Pair("payload", result)
             )
         )
         out.collect(result)
+    }
+
+    private fun createDataProvenance(records: List<SensorRecord>): Provenance {
+        return Provenance(
+            previousId = "flink-${javaClass.simpleName}",
+            type = "sensorDataReport",
+            wasDerivedFrom = records.map { it.prov.previousId }.distinct().joinToString { it },
+            wasGeneratedBy = "flink-${javaClass.simpleName}"
+        )
     }
 }

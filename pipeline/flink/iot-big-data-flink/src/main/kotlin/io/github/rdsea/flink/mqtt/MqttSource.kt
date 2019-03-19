@@ -45,14 +45,13 @@ class MqttSource(
         while (blockingConnection.isConnected && !interrupted.get()) {
             val message = blockingConnection.receive()
             val mqttMessage = MqttMessage(message.topic, String(message.payload))
-            val json: Map<String, String> = gson.fromJson(mqttMessage.payload, typeToken)
+            val json: Map<String, Any> = gson.fromJson(mqttMessage.payload, typeToken)
             FLUENCY.emit("$FLUENTD_PREFIX.mqtt",
                 EventTime.fromEpochMilli(System.currentTimeMillis()),
                 mapOf(
                     Pair("log", "MQTT message received"),
-                    Pair("stage", "input"),
-                    Pair("dataId", json["id"]),
-                    Pair("topic", mqttMessage.topic),
+                    Pair("mqtt_topic", mqttMessage.topic),
+                    Pair("mqtt_uri", uri),
                     Pair("payload", json)
                 )
             )
@@ -71,6 +70,6 @@ class MqttSource(
 
     companion object {
         private val gson = Gson()
-        private val typeToken = object : TypeToken<Map<String, String>>() {}.type
+        private val typeToken = object : TypeToken<Map<String, Any>>() {}.type
     }
 }

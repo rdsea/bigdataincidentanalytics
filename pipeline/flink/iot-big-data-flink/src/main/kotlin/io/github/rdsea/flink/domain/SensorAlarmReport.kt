@@ -13,5 +13,14 @@ data class SensorAlarmReport(
     val id: String,
     val stationId: String,
     val numberOfAlarms: Int,
-    val averageSensorValue: Double
+    val averageSensorValue: Double,
+    var prov: Provenance
 )
+
+fun SensorAlarmReport.withProv(prov: Provenance): SensorAlarmReport {
+    return SensorAlarmReport(this.id,
+        this.stationId,
+        this.numberOfAlarms,
+        this.averageSensorValue,
+        prov)
+}

@@ -1,6 +1,7 @@
 package io.github.rdsea.flink.domain
 
 import com.google.gson.annotations.SerializedName
+import java.io.Serializable
 import java.time.LocalDateTime
 
 /**
@@ -26,5 +27,13 @@ data class SensorRecord(
     var endTime: LocalDateTime = LocalDateTime.MIN,
     @SerializedName("value")
     var sensorValue: Double = 0.0,
-    var threshold: Double = 0.0
+    var threshold: Double = 0.0,
+    var prov: Provenance = Provenance()
 )
+
+data class Provenance(
+    var previousId: String = "",
+    var type: String = "",
+    var wasDerivedFrom: String = "",
+    var wasGeneratedBy: String = ""
+) : Serializable
