@@ -41,7 +41,8 @@ class MqttSource(
         val blockingConnection = mqtt.blockingConnection()
         blockingConnection.connect()
         blockingConnection.subscribe(arrayOf(Topic(topic, QoS.AT_LEAST_ONCE)))
-        FLUENCY.emit("$FLUENTD_PREFIX.mqtt", mapOf(Pair("log", "connected to MQTT source")))
+        FLUENCY.emit("$FLUENTD_PREFIX.mqtt", mapOf(
+            Pair("log", "connected to MQTT source"), Pair("layer", "APPLICATION")))
         while (blockingConnection.isConnected && !interrupted.get()) {
             val message = blockingConnection.receive()
             val mqttMessage = MqttMessage(message.topic, String(message.payload))
@@ -52,6 +53,7 @@ class MqttSource(
                     Pair("log", "MQTT message received"),
                     Pair("mqtt_topic", mqttMessage.topic),
                     Pair("mqtt_uri", uri),
+                    Pair("layer", "APPLICATION"),
                     Pair("payload", json)
                 )
             )
@@ -60,12 +62,14 @@ class MqttSource(
         }
 
         blockingConnection.disconnect()
-        FLUENCY.emit("$FLUENTD_PREFIX.mqtt", mapOf(Pair("log", "Disconnected from MQTT source")))
+        FLUENCY.emit("$FLUENTD_PREFIX.mqtt", mapOf(
+            Pair("log", "Disconnected from MQTT source"), Pair("layer", "APPLICATION")))
     }
 
     override fun cancel() {
         interrupted.set(true)
-        FLUENCY.emit("$FLUENTD_PREFIX.mqtt", mapOf(Pair("log", "Connection cancelled")))
+        FLUENCY.emit("$FLUENTD_PREFIX.mqtt", mapOf(
+            Pair("log", "Connection cancelled"), Pair("layer", "APPLICATION")))
     }
 
     companion object {

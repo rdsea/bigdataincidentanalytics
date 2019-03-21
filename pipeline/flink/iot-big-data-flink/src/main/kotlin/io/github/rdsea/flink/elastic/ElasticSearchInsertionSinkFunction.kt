@@ -37,6 +37,7 @@ class ElasticSearchInsertionSinkFunction : ElasticsearchSinkFunction<SensorAlarm
             EventTime.fromEpochMilli(System.currentTimeMillis()),
             mapOf(
                 Pair("log", "Sending sensor alarm report of station ${reportWithProv.stationId} to data store"),
+                Pair("layer", "APPLICATION"),
                 Pair("data", reportWithProv)
             )
         )

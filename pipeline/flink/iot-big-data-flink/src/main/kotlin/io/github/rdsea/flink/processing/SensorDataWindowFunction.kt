@@ -44,6 +44,7 @@ class SensorDataWindowFunction : WindowFunction<SensorRecord, SensorAlarmReport,
             EventTime.fromEpochMilli(System.currentTimeMillis()),
             mapOf(
                 Pair("log", "Periodic aggregation of sensor station $key"),
+                Pair("layer", "APPLICATION"),
                 Pair("payload", result)
             )
         )

@@ -238,6 +238,7 @@ services:
       - HDFS_URL=hdfs://namenode:8020/nifi
     networks:
       - iot-big-data
+    << : *custom-logging
 
   # THIS SERVICE IS DEFINED JUST FOR COMPLETENESS. FLUENTD *MUST* BE STARTED ON HOST BEFORE ANY OTHER SERVICE,
   # OTHERWISE THE OTHER CONTAINERS CAN'T START DUE TO MISSING LOGGING DRIVER.
@@ -247,6 +248,7 @@ services:
     volumes:
       - ./logging/fluentd/conf:/fluentd/etc
       - ./logging/fluentd/logs:/fluentd/log/bigdataincidentanalytics
+      - ./logging/fluentd/logs/pipeline:/fluentd/log/bigdataincidentanalytics/pipeline
     networks:
       - iot-big-data
     ports:

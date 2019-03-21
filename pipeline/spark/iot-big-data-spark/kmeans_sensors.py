@@ -17,9 +17,8 @@ hdfsUrl = os.environ.get('HDFS_URL', default="hdfs://namenode:8020")
 
 def process_record(record):
     logger.emit('hdfs', {
-        'stage': 'input',
         'log': 'Data read from HDFS',
-        'dataId': record["id"],
+        'layer': 'APPLICATION',
         'payload': record
     })
 
@@ -56,9 +55,8 @@ if __name__ == "__main__":
 
     WSSSE = parsedData.map(lambda point: error(point)).reduce(lambda x, y: x + y)
     logger.emit('ml', {
-        'stage': 'processing',
         'log': 'Within Set Sum of Squared Error computed',
-        'dataId': dataIds,
+        'layer': 'APPLICATION',
         'WSSSE': float(WSSSE)
     })
 
