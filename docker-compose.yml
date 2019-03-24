@@ -12,8 +12,7 @@ services:
 
   ##### IoT SENSORS #####
   simplesensor:
-    # TODO don't forget to change this
-    image: simplesensor:latest
+    image: danielfuvesi/bigdataincidentanalytics:simplesensor
     networks:
       - iot-big-data
     volumes:
