@@ -32,7 +32,7 @@ data class SensorRecord(
 )
 
 data class Provenance(
-    var previousId: String = "",
+    var id: String = "",
     var type: String = "",
     var wasDerivedFrom: String = "",
     var wasGeneratedBy: String = ""

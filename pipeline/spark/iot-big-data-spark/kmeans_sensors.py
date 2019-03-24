@@ -16,9 +16,8 @@ hdfsUrl = os.environ.get('HDFS_URL', default="hdfs://namenode:8020")
 
 
 def process_record(record):
-    logger.emit('hdfs', {
+    logger.emit('hdfs.app.dataAsset', {
         'log': 'Data read from HDFS',
-        'layer': 'APPLICATION',
         'payload': record
     })
 
@@ -30,15 +29,25 @@ if __name__ == "__main__":
                              + os.environ.get('SPARK_MASTER_PORT', default="7077"))  # SparkContext
 
     # Load and parse the data
-    data = sc.wholeTextFiles(hdfsUrl)
-    rdd = data.values()
+    try:
+        data = sc.wholeTextFiles(hdfsUrl)
+    except Exception as e:
+        logger.emit('hdfs.app.error', {
+            'log': 'ERROR cannot read from HDFS' + hdfsUrl,
+            'error': str(e)
+        })
+        sc.stop()
+        logger.close()
+    rdd = sc.wholeTextFiles(hdfsUrl)
     dataIds = ""
+    provDerivedFrom = ""
     for member in rdd.collect():
         json_rec = json.loads(member)
         if dataIds:
             dataIds += ", " + json_rec["id"]
         else:
             dataIds += json_rec["id"]
+            provDerivedFrom = json_rec["prov"]["id"]
         process_record(json_rec)
 
     json_rdd = rdd.map(lambda x: json.loads(x))
@@ -54,10 +63,17 @@ if __name__ == "__main__":
 
 
     WSSSE = parsedData.map(lambda point: error(point)).reduce(lambda x, y: x + y)
-    logger.emit('ml', {
+    logger.emit('ml.app.dataAsset', {
         'log': 'Within Set Sum of Squared Error computed',
-        'layer': 'APPLICATION',
-        'WSSSE': float(WSSSE)
+        'data': {
+            'WSSSE': float(WSSSE),
+            'prov': {
+                'id': 'spark',
+                'wasDerivedFrom': provDerivedFrom,
+                'type': 'calculatedValue',
+                'wasGeneratedBy': 'spark-kmeans-ml'
+            }
+        }
     })
 
     # Save and load model

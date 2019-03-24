@@ -40,11 +40,10 @@ class SensorDataWindowFunction : WindowFunction<SensorRecord, SensorAlarmReport,
         val records = input.iterator().asSequence().toList()
         val id = records.joinToString { it.id }
         val result = SensorAlarmReport(id, key, records.size, records.map { it.sensorValue }.average(), createDataProvenance(records))
-        FLUENCY.emit("$FLUENTD_PREFIX.aggregation",
+        FLUENCY.emit("$FLUENTD_PREFIX.aggregation.app.dataAsset",
             EventTime.fromEpochMilli(System.currentTimeMillis()),
             mapOf(
                 Pair("log", "Periodic aggregation of sensor station $key"),
-                Pair("layer", "APPLICATION"),
                 Pair("payload", result)
             )
         )
@@ -53,9 +52,9 @@ class SensorDataWindowFunction : WindowFunction<SensorRecord, SensorAlarmReport,
 
     private fun createDataProvenance(records: List<SensorRecord>): Provenance {
         return Provenance(
-            previousId = "flink-${javaClass.simpleName}",
+            id = "flink-${javaClass.simpleName}",
             type = "sensorDataReport",
-            wasDerivedFrom = records.map { it.prov.previousId }.distinct().joinToString { it },
+            wasDerivedFrom = records.map { it.prov.id }.distinct().joinToString { it },
             wasGeneratedBy = "flink-${javaClass.simpleName}"
         )
     }

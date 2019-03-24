@@ -33,11 +33,10 @@ class ElasticSearchInsertionSinkFunction : ElasticsearchSinkFunction<SensorAlarm
         val indexRequest = createIndexRequest(reportWithProv)
         logger.debug { "SINK - new IndexRequest created" }
         indexer.add(indexRequest)
-        FLUENCY.emit("$FLUENTD_PREFIX.storage",
+        FLUENCY.emit("$FLUENTD_PREFIX.storage.app.dataAsset",
             EventTime.fromEpochMilli(System.currentTimeMillis()),
             mapOf(
                 Pair("log", "Sending sensor alarm report of station ${reportWithProv.stationId} to data store"),
-                Pair("layer", "APPLICATION"),
                 Pair("data", reportWithProv)
             )
         )
@@ -54,9 +53,9 @@ class ElasticSearchInsertionSinkFunction : ElasticsearchSinkFunction<SensorAlarm
 
     private fun createDataProvenance(element: SensorAlarmReport): Provenance {
         return Provenance(
-            previousId = "flink-${javaClass.simpleName}",
+            id = "flink-${javaClass.simpleName}",
             type = "sensorDataReport",
-            wasDerivedFrom = element.prov.previousId,
+            wasDerivedFrom = element.prov.id,
             wasGeneratedBy = "flink-${javaClass.simpleName}"
         )
     }
