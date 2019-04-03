@@ -41,12 +41,14 @@ services:
       - 9249
     ports:
       - 8081:8081
+    volumes:
+      - ./pipeline/flink/logback.xml:/opt/flink/conf/logback-console.xml:ro
     networks:
       - iot-big-data
     command: jobmanager
     environment:
       - JOB_MANAGER_RPC_ADDRESS=jobmanager
-    << : *custom-logging
+      - LOG_COMPONENT_TAG=flink.platform.jobmanager
 
   flink_taskmanager:
     build: pipeline/flink
@@ -54,6 +56,8 @@ services:
       - 6121
       - 6122
       - 9249
+    volumes:
+      - ./pipeline/flink/logback.xml:/opt/flink/conf/logback-console.xml:ro
     networks:
       - iot-big-data
     depends_on:
@@ -64,7 +68,7 @@ services:
       - FLUENTD_TAG_PREFIX=flink-processing
       - FLUENTD_HOST=fluentd
       - FLUENTD_PORT=24224
-    << : *custom-logging
+      - LOG_COMPONENT_TAG=flink.platform.taskmanager
 
   ##### APACHE NIFI #####
   nifi:
@@ -74,11 +78,13 @@ services:
     volumes:
       - ./pipeline/nifi/logs:/opt/nifi/nifi-current/logs
       - ./pipeline/hadoop/config:/opt/nifi/nifi-current/hadoop
+      - ./pipeline/nifi/logback.xml:/opt/nifi/nifi-current/conf/logback.xml:ro
     networks:
       - iot-big-data
     ports:
       - 8080:8080
-    << : *custom-logging
+    environment:
+      - LOG_COMPONENT_TAG=nifi.platform
 
   ##### APACHE HADOOP #####
   namenode:
@@ -199,7 +205,7 @@ services:
       - ./pipeline/spark/config/spark-env.sh:/spark/conf/spark-env.sh
     networks:
       - iot-big-data
-    << : *custom-logging
+    #<< : *custom-logging
 
   spark-worker:
     image: bde2020/spark-worker:2.4.0-hadoop2.8
