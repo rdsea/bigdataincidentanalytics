@@ -211,6 +211,7 @@ module.exports = {
         // os:require('os'),
         // jfive:require("johnny-five"),
         // j5board:require("johnny-five").Board({repl:false})
+        FluentLogger:require('fluent-logger')
     },
 
     // Context Storage
@@ -247,6 +248,49 @@ module.exports = {
             metrics: false,
             // Whether or not to include audit events in the log output
             audit: false
+        },
+        fluentd : {
+            level: "info",
+            metrics: false,
+            audit: false,
+            handler: function(conf) {
+                const FluentLogger = require('fluent-logger');
+                const EventTime = FluentLogger.EventTime;
+                FluentLogger.configure(process.env.FLUENTD_TAG_PREFIX, {
+                    host: process.env.FLUENTD_HOST,
+                    port: process.env.FLUENTD_PORT
+                });
+                FluentLogger.on('error', (error) => {
+                    console.log(error);
+                });
+                // Return the function that will do the actual logging
+                return function(message) {
+                    let timestamp = message.timestamp;
+                    delete message.timestamp;
+                    if (typeof message.msg !== 'string') {
+                        message.msg = JSON.stringify(message.msg);
+                    }
+                    switch (message.level) {
+                        case 40:
+                            message.level = "INFO";
+                            break;
+                        case 30:
+                            message.level = "WARN";
+                            break;
+                        case 20:
+                            message.level = "ERROR";
+                            break;
+                        case 10:
+                            message.level = "FATAL";
+                            break;
+                    }
+                    FluentLogger.emit(
+                        'platform',
+                        message,
+                        EventTime.fromTimestamp(timestamp)
+                    );
+                }
+            }
         }
     },
 
@@ -257,4 +301,4 @@ module.exports = {
             enabled: false
         }
     },
-}
+};

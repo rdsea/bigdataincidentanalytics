@@ -261,6 +261,7 @@ hs_err_pid*
 /pipeline/nodered/*
 !/pipeline/nodered/settings.js
 !/pipeline/nodered/flows.json
+!/pipeline/nodered/package.json
 /monitoring/constraints/data/*
 
 *.meta
