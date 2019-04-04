@@ -258,10 +258,10 @@ yarn-error.log*
 hs_err_pid*
 #/pipeline/hadoop/config/hdfs-site.xml
 #/pipeline/hadoop/config/core-site.xml
-/pipeline/nodered/*
-!/pipeline/nodered/settings.js
-!/pipeline/nodered/flows.json
-!/pipeline/nodered/package.json
+/pipeline/nodered/data/*
+!/pipeline/nodered/data/settings.js
+!/pipeline/nodered/data/flows.json
+!/pipeline/nodered/data/package.json
 /monitoring/constraints/data/*
 
 *.meta

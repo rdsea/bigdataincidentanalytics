@@ -32,8 +32,20 @@ services:
       - 1883:1883
       - 9001:9001
     volumes:
+      - ./pipeline/mqtt/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - ./pipeline/mqtt/mosquitto.log:/var/log/mosquitto.log
       - $ETC_LOCALTIME:/etc/localtime:ro
     << : *custom-logging
+
+  mqtt_fluentbit:
+    image: fluent/fluent-bit:1.0.6
+    volumes:
+      - ./pipeline/mqtt/mosquitto.log:/fluent-bit/etc/log/mqtt.log
+      - ./pipeline/mqtt/fluentbit/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf
+      - ./pipeline/mqtt/fluentbit/parsers.conf:/fluent-bit/etc/parsers.conf
+      - $ETC_LOCALTIME:/etc/localtime:ro
+    networks:
+      - iot-big-data
 
   ##### APACHE FLINK #####
   flink_jobmanager:
@@ -160,13 +172,13 @@ services:
 
   ##### Node-RED #####
   nodered:
-    image: nodered/node-red-docker:slim
+    build: pipeline/nodered
     ports:
       - 1880:1880
     networks:
       - iot-big-data
     volumes:
-      - ./pipeline/nodered:/data
+      - ./pipeline/nodered/data:/data
       - $ETC_LOCALTIME:/etc/localtime:ro
     environment:
       - FLUENTD_TAG_PREFIX=nodered
