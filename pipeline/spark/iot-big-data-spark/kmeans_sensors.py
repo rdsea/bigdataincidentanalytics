@@ -31,6 +31,52 @@ if __name__ == "__main__":
     # Load and parse the data
     try:
         data = sc.wholeTextFiles(hdfsUrl)
+
+        rdd = sc.wholeTextFiles(hdfsUrl)
+        dataIds = ""
+        provDerivedFrom = ""
+        for member in rdd.collect():
+            json_rec = json.loads(member[1])
+            if dataIds:
+                dataIds += ", " + json_rec["id"]
+            else:
+                dataIds += json_rec["id"]
+                provDerivedFrom = json_rec["prov"]["id"]
+            process_record(json_rec)
+
+        json_rdd = rdd.map(lambda x: json.loads(x[1]))
+        parsedData = json_rdd.map(lambda sensor_json: array([float(sensor_json["value"])]))
+
+        # Build the model (cluster the data)
+        clusters = KMeans.train(parsedData, 2, maxIterations=10, initializationMode="random")
+
+        # Evaluate clustering by computing Within Set Sum of Squared Errors
+        def error(point):
+            center = clusters.centers[clusters.predict(point)]
+            return sqrt(sum([x ** 2 for x in (point - center)]))
+
+
+        WSSSE = parsedData.map(lambda point: error(point)).reduce(lambda x, y: x + y)
+        logger.emit('ml.app.dataAsset', {
+            'log': 'Within Set Sum of Squared Error computed',
+            'data': {
+                'WSSSE': float(WSSSE),
+                'prov': {
+                    'id': 'spark',
+                    'wasDerivedFrom': provDerivedFrom,
+                    'type': 'calculatedValue',
+                    'wasGeneratedBy': 'spark-kmeans-ml'
+                }
+            }
+        })
+
+        # Save and load model
+        # clusters.save(sc, "target/org/apache/spark/PythonKMeansExample/KMeansModel")
+        # sameModel = KMeansModel.load(sc, "target/org/apache/spark/PythonKMeansExample/KMeansModel")
+        # $example off$
+
+        sc.stop()
+        logger.close()
     except Exception as e:
         logger.emit('hdfs.app.error', {
             'log': 'ERROR cannot read from HDFS' + hdfsUrl,
@@ -38,48 +84,3 @@ if __name__ == "__main__":
         })
         sc.stop()
         logger.close()
-    rdd = sc.wholeTextFiles(hdfsUrl)
-    dataIds = ""
-    provDerivedFrom = ""
-    for member in rdd.collect():
-        json_rec = json.loads(member[1])
-        if dataIds:
-            dataIds += ", " + json_rec["id"]
-        else:
-            dataIds += json_rec["id"]
-            provDerivedFrom = json_rec["prov"]["id"]
-        process_record(json_rec)
-
-    json_rdd = rdd.map(lambda x: json.loads(x[1]))
-    parsedData = json_rdd.map(lambda sensor_json: array([float(sensor_json["value"])]))
-
-    # Build the model (cluster the data)
-    clusters = KMeans.train(parsedData, 2, maxIterations=10, initializationMode="random")
-
-    # Evaluate clustering by computing Within Set Sum of Squared Errors
-    def error(point):
-        center = clusters.centers[clusters.predict(point)]
-        return sqrt(sum([x ** 2 for x in (point - center)]))
-
-
-    WSSSE = parsedData.map(lambda point: error(point)).reduce(lambda x, y: x + y)
-    logger.emit('ml.app.dataAsset', {
-        'log': 'Within Set Sum of Squared Error computed',
-        'data': {
-            'WSSSE': float(WSSSE),
-            'prov': {
-                'id': 'spark',
-                'wasDerivedFrom': provDerivedFrom,
-                'type': 'calculatedValue',
-                'wasGeneratedBy': 'spark-kmeans-ml'
-            }
-        }
-    })
-
-    # Save and load model
-    # clusters.save(sc, "target/org/apache/spark/PythonKMeansExample/KMeansModel")
-    # sameModel = KMeansModel.load(sc, "target/org/apache/spark/PythonKMeansExample/KMeansModel")
-    # $example off$
-
-    sc.stop()
-    logger.close()
