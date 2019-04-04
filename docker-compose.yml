@@ -172,7 +172,6 @@ services:
       - FLUENTD_TAG_PREFIX=nodered
       - FLUENTD_HOST=fluentd
       - FLUENTD_PORT=24224
-    #<< : *custom-logging
 
   ##### ELK STACK #####
   elasticsearch:
@@ -210,7 +209,7 @@ services:
 
   ##### APACHE SPARK #####
   spark-master:
-    image: bde2020/spark-master:2.4.0-hadoop2.8
+    build: pipeline/spark/master
     container_name: spark-master
     ports:
       - 8082:8080
@@ -218,17 +217,18 @@ services:
     environment:
       - ENABLE_INIT_DAEMON=false
       - "constraint:node==master"
+      - LOG_COMPONENT_TAG=spark.platform.master
     volumes:
       - ./pipeline/hadoop/config/core-site.xml:/etc/hadoop/core-site.xml
       - ./pipeline/hadoop/config/hdfs-site.xml:/etc/hadoop/hdfs-site.xml
       - ./pipeline/spark/config/spark-env.sh:/spark/conf/spark-env.sh
+      - ./pipeline/spark/master/logback.xml:/spark/conf/logback.xml:ro
       - $ETC_LOCALTIME:/etc/localtime:ro
     networks:
       - iot-big-data
-    #<< : *custom-logging
 
   spark-worker:
-    image: bde2020/spark-worker:2.4.0-hadoop2.8
+    build: pipeline/spark/worker
     depends_on:
       - spark-master
     ports:
@@ -237,14 +237,15 @@ services:
       - SPARK_MASTER=spark://spark-master:7077
       - ENABLE_INIT_DAEMON=false
       - "constraint:node==master"
+      - LOG_COMPONENT_TAG=spark.platform.worker
     volumes:
       - ./pipeline/hadoop/config/core-site.xml:/etc/hadoop/core-site.xml
       - ./pipeline/hadoop/config/hdfs-site.xml:/etc/hadoop/hdfs-site.xml
       - ./pipeline/spark/config/spark-env.sh:/spark/conf/spark-env.sh
+      - ./pipeline/spark/worker/logback.xml:/spark/conf/logback.xml:ro
       - $ETC_LOCALTIME:/etc/localtime:ro
     networks:
       - iot-big-data
-    << : *custom-logging
 
   spark-app:
     build: pipeline/spark/iot-big-data-spark
@@ -262,11 +263,12 @@ services:
       - FLUENTD_HOST=fluentd
       - FLUENTD_PORT=24224
       - HDFS_URL=hdfs://namenode:8020/nifi
+      - LOG_COMPONENT_TAG=spark.platform.kmeans
     volumes:
       - $ETC_LOCALTIME:/etc/localtime:ro
+      - ./pipeline/spark/iot-big-data-spark/logback.xml:/spark/conf/logback.xml:ro
     networks:
       - iot-big-data
-    << : *custom-logging
 
   # THIS SERVICE IS DEFINED JUST FOR COMPLETENESS. FLUENTD *MUST* BE STARTED ON HOST BEFORE ANY OTHER SERVICE,
   # OTHERWISE THE OTHER CONTAINERS CAN'T START DUE TO MISSING LOGGING DRIVER.

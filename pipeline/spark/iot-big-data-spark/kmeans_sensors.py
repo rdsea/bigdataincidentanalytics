@@ -42,7 +42,7 @@ if __name__ == "__main__":
     dataIds = ""
     provDerivedFrom = ""
     for member in rdd.collect():
-        json_rec = json.loads(member)
+        json_rec = json.loads(member[1])
         if dataIds:
             dataIds += ", " + json_rec["id"]
         else:
@@ -50,7 +50,7 @@ if __name__ == "__main__":
             provDerivedFrom = json_rec["prov"]["id"]
         process_record(json_rec)
 
-    json_rdd = rdd.map(lambda x: json.loads(x))
+    json_rdd = rdd.map(lambda x: json.loads(x[1]))
     parsedData = json_rdd.map(lambda sensor_json: array([float(sensor_json["value"])]))
 
     # Build the model (cluster the data)

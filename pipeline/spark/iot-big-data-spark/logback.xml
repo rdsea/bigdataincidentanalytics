@@ -1,0 +1,45 @@
+<configuration>
+    <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{60} %X{sourceThread} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Fluency -->
+    <appender name="FLUENCY_SYNC" class="ch.qos.logback.more.appenders.FluencyLogbackAppender">
+        <!-- Tag for Fluentd. Farther information: http://docs.fluentd.org/articles/config-file -->
+        <tag>${LOG_COMPONENT_TAG}</tag>
+
+        <!-- Host name/address and port number which Flentd placed -->
+        <remoteHost>fluentd</remoteHost>
+        <port>24224</port>
+
+        <flushIntervalMillis>1200</flushIntervalMillis>
+        <useEventTime>true</useEventTime>
+        <sslEnabled>false</sslEnabled>
+        <!--  [Optional] If true, Map Marker is expanded instead of nesting in the marker name -->
+        <flattenMapMarker>false</flattenMapMarker>
+
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{60} %X{sourceThread} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="FLUENCY" class="ch.qos.logback.classic.AsyncAppender">
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>WARN</level>
+        </filter>
+        <!-- Max queue size of logs which is waiting to be sent (When it reach to the max size, the log will be disappeared). -->
+        <queueSize>999</queueSize>
+        <!-- Never block when the queue becomes full. -->
+        <neverBlock>true</neverBlock>
+        <maxFlushTime>10000</maxFlushTime>
+        <appender-ref ref="FLUENCY_SYNC" />
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="console"/>
+        <appender-ref ref="FLUENCY"/>
+    </root>
+
+</configuration>

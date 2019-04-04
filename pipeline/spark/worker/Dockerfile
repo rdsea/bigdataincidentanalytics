@@ -1,9 +1,4 @@
-FROM bde2020/spark-python-template:2.4.0-hadoop2.8
-
-MAINTAINER Daniel Fuevesi <daniel.fuevesi@gmail.com>
-
-COPY kmeans_sensors.py /app/app.py
-COPY requirements.txt /app/requirements.txt
+FROM bde2020/spark-worker:2.4.0-hadoop2.8
 
 RUN rm /opt/hadoop-2.8.0/share/hadoop/common/lib/slf4j-log4j12-1.7.10.jar
 
@@ -22,4 +17,3 @@ ADD http://central.maven.org/maven2/org/msgpack/msgpack-core/0.8.15/msgpack-core
 ADD http://central.maven.org/maven2/org/slf4j/slf4j-api/1.7.26/slf4j-api-1.7.26.jar $SPARK_HOME/jars/slf4j-api.jar
 ADD http://central.maven.org/maven2/org/slf4j/log4j-over-slf4j/1.7.26/log4j-over-slf4j-1.7.26.jar $SPARK_HOME/jars/log4j-over-slf4j.jar
 
-ENV SPARK_APPLICATION_PYTHON_LOCATION /app/app.py
