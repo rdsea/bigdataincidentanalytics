@@ -16,7 +16,7 @@ Following components are included in the prototype:
 ## Citations
 
 * Hong-Linh Truong, Manfred Halper, Characterizing Incidents in Cloud-based IoT Data Analytics, Proceedings of The 42nd IEEE International Conference on
-Computers, Software and Applications (COMPSAC 2018), [Author version](http://www.infosys.tuwien.ac.at/staff/truong/publications/2018/truong-compsac2018-cr.pdf), [Pre-print long version](https://www.researchgate.net/publication/324170664_Characterizing_Incidents_in_Cloud-based_IoT_Data_Analytics), [Slides](https://www.slideshare.net/linhsolar/characterizing-incidents-in-cloudbased-iot-data-analytics)
+Computers, Software and Applications (COMPSAC 2018), [Author version](https://users.aalto.fi/~truongh4/publications/2018/truong-compsac2018-cr.pdf), [Pre-print long version](https://www.researchgate.net/publication/324170664_Characterizing_Incidents_in_Cloud-based_IoT_Data_Analytics), [Slides](https://www.slideshare.net/linhsolar/characterizing-incidents-in-cloudbased-iot-data-analytics)
 
 ## Installation 
 
