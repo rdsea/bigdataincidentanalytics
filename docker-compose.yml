@@ -18,6 +18,11 @@ services:
     volumes:
       - ./pipeline/sensors/simplesensor:/var/config
       - $ETC_LOCALTIME:/etc/localtime:ro
+    environment:
+      - FLUENTD_TAG=sensor
+      - FLUENTD_HOST=fluentd
+      - FLUENTD_PORT=24224
+      - RATE_MS=1000
     command: npm start -- -c /var/config/config.json
     << : *custom-logging
 
@@ -285,13 +290,20 @@ services:
   # THIS SERVICE IS DEFINED JUST FOR COMPLETENESS. FLUENTD *MUST* BE STARTED ON HOST BEFORE ANY OTHER SERVICE,
   # OTHERWISE THE OTHER CONTAINERS CAN'T START DUE TO MISSING LOGGING DRIVER.
   fluentd:
-    build: logging/fluentd
+    #build: logging/fluentd
+    image: fluentd:gcp_onpremise # use this image if you want to forward logs into Google Stackdriver
     container_name: fluentd
     volumes:
-      - ./logging/fluentd/conf:/fluentd/etc
+      - ./logging/fluentd/gcp/onpremise:/fluentd/etc  # Mount this config for Stackdriver ingestion
+      #- ./logging/fluentd/conf:/fluentd/etc # Mount this config for local use
       - ./logging/fluentd/logs:/fluentd/log/bigdataincidentanalytics
       - ./logging/fluentd/logs/pipeline:/fluentd/log/bigdataincidentanalytics/pipeline
+      # Mount the GCP credentials when ingesting to Stackdriver
+      - ./application_default_credentials.json:/etc/google/auth/application_default_credentials.json
       - $ETC_LOCALTIME:/etc/localtime:ro
+    environment:
+      # Set this environment variable when ingesting to Stackdriver
+      - APPLICATION_DEFAULT_CREDS="/etc/google/auth/application_default_credentials.json"
     networks:
       - iot-big-data
     ports:
