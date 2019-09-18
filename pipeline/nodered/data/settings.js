@@ -211,7 +211,9 @@ module.exports = {
         // os:require('os'),
         // jfive:require("johnny-five"),
         // j5board:require("johnny-five").Board({repl:false})
-        FluentLogger:require('fluent-logger')
+        FluentLogger:require('fluent-logger'),
+        Cloudevent:require("cloudevents-sdk/v03"),
+        uuidv4:require('uuid/v4')
     },
 
     // Context Storage
@@ -265,11 +267,8 @@ module.exports = {
                 });
                 // Return the function that will do the actual logging
                 return function(message) {
-                    let timestamp = message.timestamp;
                     delete message.timestamp;
-                    if (typeof message.msg !== 'string') {
-                        message.msg = JSON.stringify(message.msg);
-                    }
+                    console.log(message);
                     switch (message.level) {
                         case 40:
                             message.level = "INFO";
@@ -284,10 +283,22 @@ module.exports = {
                             message.level = "FATAL";
                             break;
                     }
+                    const Cloudevent = require("cloudevents-sdk/v03");
+                    const uuidv4 = require('uuid/v4');
+                    let date = new Date();
+                    let event = Cloudevent
+                        .event()
+                        .type(`${process.env.FLUENTD_TAG_PREFIX}.platform`)
+                        .source(`http://localhost:1880`)
+                        .id(uuidv4())
+                        .time(date)
+                        .subject("signpost")
+                        .addExtension("log",`${message.msg}`)
+                        .addExtension("level",`${message.level}`);
                     FluentLogger.emit(
                         'platform',
-                        message,
-                        EventTime.fromTimestamp(timestamp)
+                        event.format(),
+                        EventTime.fromDate(date)
                     );
                 }
             }

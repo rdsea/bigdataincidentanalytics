@@ -7,22 +7,24 @@ x-fluentd-logging:
     options:
       fluentd-address: localhost:24224
       tag: docker.{{.Name}}
+      fluentd-sub-second-precision: "true"
 
 services:
 
   ##### IoT SENSORS #####
   simplesensor:
-    image: danielfuvesi/bigdataincidentanalytics:simplesensor
+    #image: danielfuvesi/bigdataincidentanalytics:simplesensor
+    image: simplesensor:latest
     networks:
       - iot-big-data
     volumes:
       - ./pipeline/sensors/simplesensor:/var/config
       - $ETC_LOCALTIME:/etc/localtime:ro
     environment:
-      - FLUENTD_TAG=sensor
+      - FLUENTD_TAG=com.rdsea.sensor
       - FLUENTD_HOST=fluentd
       - FLUENTD_PORT=24224
-      - RATE_MS=1000
+      - RATE_MS=2000
     command: npm start -- -c /var/config/config.json
     << : *custom-logging
 
@@ -69,7 +71,7 @@ services:
     command: jobmanager
     environment:
       - JOB_MANAGER_RPC_ADDRESS=jobmanager
-      - LOG_COMPONENT_TAG=flink.platform.jobmanager
+      - LOG_COMPONENT_TAG=com.rdsea.flink.platform.jobmanager
 
   flink_taskmanager:
     build: pipeline/flink
@@ -87,10 +89,10 @@ services:
     command: taskmanager
     environment:
       - JOB_MANAGER_RPC_ADDRESS=jobmanager
-      - FLUENTD_TAG_PREFIX=flink-processing
+      - FLUENTD_TAG_PREFIX=com.rdsea.flink-processing
       - FLUENTD_HOST=fluentd
       - FLUENTD_PORT=24224
-      - LOG_COMPONENT_TAG=flink.platform.taskmanager
+      - LOG_COMPONENT_TAG=com.rdsea.flink.platform.taskmanager
 
   ##### APACHE NIFI #####
   nifi:
@@ -186,7 +188,7 @@ services:
       - ./pipeline/nodered/data:/data
       - $ETC_LOCALTIME:/etc/localtime:ro
     environment:
-      - FLUENTD_TAG_PREFIX=nodered
+      - FLUENTD_TAG_PREFIX=com.rdsea.nodered
       - FLUENTD_HOST=fluentd
       - FLUENTD_PORT=24224
 
@@ -234,7 +236,7 @@ services:
     environment:
       - ENABLE_INIT_DAEMON=false
       - "constraint:node==master"
-      - LOG_COMPONENT_TAG=spark.platform.master
+      - LOG_COMPONENT_TAG=com.rdsea.spark.platform.master
     volumes:
       - ./pipeline/hadoop/config/core-site.xml:/etc/hadoop/core-site.xml
       - ./pipeline/hadoop/config/hdfs-site.xml:/etc/hadoop/hdfs-site.xml
@@ -254,7 +256,7 @@ services:
       - SPARK_MASTER=spark://spark-master:7077
       - ENABLE_INIT_DAEMON=false
       - "constraint:node==master"
-      - LOG_COMPONENT_TAG=spark.platform.worker
+      - LOG_COMPONENT_TAG=com.rdsea.spark.platform.worker
     volumes:
       - ./pipeline/hadoop/config/core-site.xml:/etc/hadoop/core-site.xml
       - ./pipeline/hadoop/config/hdfs-site.xml:/etc/hadoop/hdfs-site.xml
@@ -276,11 +278,11 @@ services:
       - ENABLE_INIT_DAEMON=false
       - SPARK_MASTER_NAME=spark-master
       - SPARK_MASTER_PORT=7077
-      - FLUENTD_TAG_PREFIX=spark-kmeans
+      - FLUENTD_TAG_PREFIX=com.rdsea.spark-kmeans
       - FLUENTD_HOST=fluentd
       - FLUENTD_PORT=24224
       - HDFS_URL=hdfs://namenode:8020/nifi
-      - LOG_COMPONENT_TAG=spark.platform.kmeans
+      - LOG_COMPONENT_TAG=com.rdsea.spark.platform.kmeans
     volumes:
       - $ETC_LOCALTIME:/etc/localtime:ro
       - ./pipeline/spark/iot-big-data-spark/logback.xml:/spark/conf/logback.xml:ro
@@ -290,20 +292,19 @@ services:
   # THIS SERVICE IS DEFINED JUST FOR COMPLETENESS. FLUENTD *MUST* BE STARTED ON HOST BEFORE ANY OTHER SERVICE,
   # OTHERWISE THE OTHER CONTAINERS CAN'T START DUE TO MISSING LOGGING DRIVER.
   fluentd:
-    #build: logging/fluentd
-    image: fluentd:gcp_onpremise # use this image if you want to forward logs into Google Stackdriver
+    build: logging/fluentd
+    #image: fluentd:gcp_onpremise # use this image if you want to forward logs into Google Stackdriver
     container_name: fluentd
     volumes:
-      - ./logging/fluentd/gcp/onpremise:/fluentd/etc  # Mount this config for Stackdriver ingestion
-      #- ./logging/fluentd/conf:/fluentd/etc # Mount this config for local use
+      #- ./logging/fluentd/gcp/onpremise:/fluentd/etc  # Mount this config for Stackdriver ingestion
+      - ./logging/fluentd/conf:/fluentd/etc # Mount this config for local use
       - ./logging/fluentd/logs:/fluentd/log/bigdataincidentanalytics
       - ./logging/fluentd/logs/pipeline:/fluentd/log/bigdataincidentanalytics/pipeline
       # Mount the GCP credentials when ingesting to Stackdriver
-      - ./application_default_credentials.json:/etc/google/auth/application_default_credentials.json
-      - $ETC_LOCALTIME:/etc/localtime:ro
-    environment:
-      # Set this environment variable when ingesting to Stackdriver
-      - APPLICATION_DEFAULT_CREDS="/etc/google/auth/application_default_credentials.json"
+      #- ./application_default_credentials.json:/etc/google/auth/application_default_credentials.json
+      #- $ETC_LOCALTIME:/etc/localtime:ro
+    #environment: # Set this environment variable when ingesting to Stackdriver
+      #- APPLICATION_DEFAULT_CREDS="/etc/google/auth/application_default_credentials.json"
     networks:
       - iot-big-data
     ports:

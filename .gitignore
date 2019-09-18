@@ -268,3 +268,5 @@ hs_err_pid*
 !gradle-wrapper.jar
 /pipeline/spark/iot-big-data-spark/Pipfile
 /pipeline/spark/iot-big-data-spark/Pipfile.lock
+/application_default_credentials.json
+/data collection/info.yaml
