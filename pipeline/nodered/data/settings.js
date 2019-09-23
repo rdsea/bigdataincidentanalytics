@@ -289,10 +289,10 @@ module.exports = {
                     let event = Cloudevent
                         .event()
                         .type(`${process.env.FLUENTD_TAG_PREFIX}.platform`)
-                        .source(`http://localhost:1880`)
+                        .source(`Node-Red/Sensor-Data-Flow`)
                         .id(uuidv4())
                         .time(date)
-                        .subject("signpost")
+                        .subject("platform signpost")
                         .addExtension("log",`${message.msg}`)
                         .addExtension("level",`${message.level}`);
                     FluentLogger.emit(
