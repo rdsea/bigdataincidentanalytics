@@ -27,8 +27,8 @@ data class SensorRecord(
     var endTime: LocalDateTime = LocalDateTime.MIN,
     @SerializedName("value")
     var sensorValue: Double = 0.0,
-    var threshold: Double = 0.0,
-    var prov: Provenance = Provenance()
+    var threshold: Double = 0.0
+    // var prov: Provenance = Provenance()
 )
 
 data class Provenance(

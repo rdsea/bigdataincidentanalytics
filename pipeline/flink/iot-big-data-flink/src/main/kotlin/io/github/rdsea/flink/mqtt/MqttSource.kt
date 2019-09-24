@@ -4,6 +4,7 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import io.github.rdsea.flink.FLUENCY
 import io.github.rdsea.flink.FLUENTD_PREFIX
+import io.github.rdsea.flink.util.CloudEventDateTimeFormatter
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.streaming.api.functions.source.RichSourceFunction
 import org.apache.flink.streaming.api.functions.source.SourceFunction
@@ -12,6 +13,8 @@ import org.fusesource.mqtt.client.QoS
 import org.fusesource.mqtt.client.Topic
 import org.komamitsu.fluency.EventTime
 import java.net.URI
+import java.time.Instant
+import java.util.UUID
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -41,19 +44,40 @@ class MqttSource(
         val blockingConnection = mqtt.blockingConnection()
         blockingConnection.connect()
         blockingConnection.subscribe(arrayOf(Topic(topic, QoS.AT_LEAST_ONCE)))
-        FLUENCY.emit("$FLUENTD_PREFIX.mqtt.app.event", mapOf(
-            Pair("log", "connected to MQTT source")))
+
+        /** Create CloudEvent, Emit to Fluentd */
+        val instant = Instant.now()
+        FLUENCY.emit(
+            "$FLUENTD_PREFIX.mqtt.app.event",
+            EventTime.fromEpoch(instant.epochSecond, instant.nano.toLong()),
+            mapOf(
+                Pair("specversion", "0.3"),
+                Pair("id", UUID.randomUUID().toString()),
+                Pair("type", "$FLUENTD_PREFIX.mqtt.app.event"),
+                Pair("source", "flink:${runtimeContext.taskNameWithSubtasks}/UDF/${javaClass.simpleName}"),
+                Pair("time", CloudEventDateTimeFormatter.format(instant)),
+                Pair("subject", "signpost"),
+                Pair("log", "Successfully connected to MQTT broker($uri, $topic)")
+            )
+        )
+
         while (blockingConnection.isConnected && !interrupted.get()) {
             val message = blockingConnection.receive()
             val mqttMessage = MqttMessage(message.topic, String(message.payload))
             val json: Map<String, Any> = gson.fromJson(mqttMessage.payload, typeToken)
-            FLUENCY.emit("$FLUENTD_PREFIX.mqtt.dataAsset",
-                EventTime.fromEpochMilli(System.currentTimeMillis()),
-                mapOf(
+
+            val time = Instant.now()
+            FLUENCY.emit(
+                "$FLUENTD_PREFIX.mqtt.app.dataAsset",
+                EventTime.fromEpoch(time.epochSecond, time.nano.toLong()), mapOf(
+                    Pair("specversion", "0.3"),
+                    Pair("id", UUID.randomUUID().toString()),
+                    Pair("type", "$FLUENTD_PREFIX.mqtt.app.dataAsset"),
+                    Pair("source", "flink:${runtimeContext.taskNameWithSubtasks}/UDF/${javaClass.simpleName}"),
+                    Pair("time", CloudEventDateTimeFormatter.format(time)),
+                    Pair("subject", json["id"] ?: error("")),
                     Pair("log", "MQTT message received"),
-                    Pair("mqtt_topic", mqttMessage.topic),
-                    Pair("mqtt_uri", uri),
-                    Pair("payload", json)
+                    Pair("data", json)
                 )
             )
             message.ack()
@@ -61,14 +85,38 @@ class MqttSource(
         }
 
         blockingConnection.disconnect()
-        FLUENCY.emit("$FLUENTD_PREFIX.mqtt.app.event", mapOf(
-            Pair("log", "Disconnected from MQTT source")))
+        val eventTime = Instant.now()
+        FLUENCY.emit(
+            "$FLUENTD_PREFIX.mqtt.app.event",
+            EventTime.fromEpoch(eventTime.epochSecond, eventTime.nano.toLong()),
+            mapOf(
+                Pair("specversion", "0.3"),
+                Pair("id", UUID.randomUUID().toString()),
+                Pair("type", "$FLUENTD_PREFIX.mqtt.app.event"),
+                Pair("source", "flink:${runtimeContext.taskNameWithSubtasks}/UDF/${javaClass.simpleName}"),
+                Pair("time", CloudEventDateTimeFormatter.format(eventTime)),
+                Pair("subject", "signpost"),
+                Pair("log", "Disconnected from MQTT source($uri, $topic)")
+            )
+        )
     }
 
     override fun cancel() {
         interrupted.set(true)
-        FLUENCY.emit("$FLUENTD_PREFIX.mqtt.app.event", mapOf(
-            Pair("log", "MQTT Connection cancelled")))
+        val eventTime = Instant.now()
+        FLUENCY.emit(
+            "$FLUENTD_PREFIX.mqtt.app.event",
+            EventTime.fromEpoch(eventTime.epochSecond, eventTime.nano.toLong()),
+            mapOf(
+                Pair("specversion", "0.3"),
+                Pair("id", UUID.randomUUID().toString()),
+                Pair("type", "$FLUENTD_PREFIX.mqtt.app.event"),
+                Pair("source", "flink:${runtimeContext.taskNameWithSubtasks}/UDF/${javaClass.simpleName}"),
+                Pair("time", CloudEventDateTimeFormatter.format(eventTime)),
+                Pair("subject", "signpost"),
+                Pair("log", "MQTT Connection cancelled($uri, $topic)")
+            )
+        )
     }
 
     companion object {

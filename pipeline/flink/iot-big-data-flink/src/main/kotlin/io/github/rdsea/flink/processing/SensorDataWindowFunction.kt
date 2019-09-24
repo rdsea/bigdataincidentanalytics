@@ -2,13 +2,15 @@ package io.github.rdsea.flink.processing
 
 import io.github.rdsea.flink.FLUENCY
 import io.github.rdsea.flink.FLUENTD_PREFIX
-import io.github.rdsea.flink.domain.Provenance
 import io.github.rdsea.flink.domain.SensorAlarmReport
 import io.github.rdsea.flink.domain.SensorRecord
+import io.github.rdsea.flink.util.CloudEventDateTimeFormatter
 import org.apache.flink.streaming.api.functions.windowing.WindowFunction
 import org.apache.flink.streaming.api.windowing.windows.GlobalWindow
 import org.apache.flink.util.Collector
 import org.komamitsu.fluency.EventTime
+import java.time.Instant
+import java.util.UUID
 
 /**
  * <h4>About this class</h4>
@@ -38,24 +40,23 @@ class SensorDataWindowFunction : WindowFunction<SensorRecord, SensorAlarmReport,
         out: Collector<SensorAlarmReport>
     ) {
         val records = input.iterator().asSequence().toList()
-        val id = records.joinToString { it.id }
-        val result = SensorAlarmReport(id, key, records.size, records.map { it.sensorValue }.average(), createDataProvenance(records))
+        val reportId = UUID.randomUUID().toString()
+        val result = SensorAlarmReport(reportId, key, records.size, records.map { it.sensorValue }.average(), records.map { it.id })
+
+        val instant = Instant.now()
         FLUENCY.emit("$FLUENTD_PREFIX.aggregation.app.dataAsset",
-            EventTime.fromEpochMilli(System.currentTimeMillis()),
+            EventTime.fromEpoch(instant.epochSecond, instant.nano.toLong()),
             mapOf(
-                Pair("log", "Periodic aggregation of sensor station $key"),
-                Pair("payload", result)
+                Pair("specversion", "0.3"),
+                Pair("id", UUID.randomUUID().toString()),
+                Pair("type", "$FLUENTD_PREFIX.mqtt.app.dataAsset"),
+                Pair("source", "flink:WindowFunction/${javaClass.simpleName}"),
+                Pair("time", CloudEventDateTimeFormatter.format(instant)),
+                Pair("subject", result.id),
+                Pair("data", result),
+                Pair("log", "Periodic aggregation of sensor station $key")
             )
         )
         out.collect(result)
-    }
-
-    private fun createDataProvenance(records: List<SensorRecord>): Provenance {
-        return Provenance(
-            id = "flink-${javaClass.simpleName}",
-            type = "sensorDataReport",
-            wasDerivedFrom = records.map { it.prov.id }.distinct().joinToString { it },
-            wasGeneratedBy = "flink-${javaClass.simpleName}"
-        )
     }
 }

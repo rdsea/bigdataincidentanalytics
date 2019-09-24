@@ -4,9 +4,8 @@ import com.google.gson.GsonBuilder
 import com.google.gson.reflect.TypeToken
 import io.github.rdsea.flink.FLUENCY
 import io.github.rdsea.flink.FLUENTD_PREFIX
-import io.github.rdsea.flink.domain.Provenance
 import io.github.rdsea.flink.domain.SensorAlarmReport
-import io.github.rdsea.flink.domain.withProv
+import io.github.rdsea.flink.util.CloudEventDateTimeFormatter
 import io.github.rdsea.flink.util.LocalDateTimeJsonSerializer
 import mu.KLogging
 import org.apache.flink.api.common.functions.RuntimeContext
@@ -15,7 +14,9 @@ import org.apache.flink.streaming.connectors.elasticsearch.RequestIndexer
 import org.elasticsearch.action.index.IndexRequest
 import org.elasticsearch.client.Requests
 import org.komamitsu.fluency.EventTime
+import java.time.Instant
 import java.time.LocalDateTime
+import java.util.UUID
 
 /**
  * <h4>About this class</h4>
@@ -29,15 +30,22 @@ import java.time.LocalDateTime
 class ElasticSearchInsertionSinkFunction : ElasticsearchSinkFunction<SensorAlarmReport> {
 
     override fun process(element: SensorAlarmReport, ctx: RuntimeContext, indexer: RequestIndexer) {
-        val reportWithProv = element.withProv(createDataProvenance(element))
-        val indexRequest = createIndexRequest(reportWithProv)
+        val indexRequest = createIndexRequest(element)
         logger.debug { "SINK - new IndexRequest created" }
         indexer.add(indexRequest)
+
+        val instant = Instant.now()
         FLUENCY.emit("$FLUENTD_PREFIX.storage.app.dataAsset",
-            EventTime.fromEpochMilli(System.currentTimeMillis()),
+            EventTime.fromEpoch(instant.epochSecond, instant.nano.toLong()),
             mapOf(
-                Pair("log", "Sending sensor alarm report of station ${reportWithProv.stationId} to data store"),
-                Pair("data", reportWithProv)
+                Pair("specversion", "0.3"),
+                Pair("id", UUID.randomUUID().toString()),
+                Pair("type", "$FLUENTD_PREFIX.storage.app.dataAsset"),
+                Pair("source", "flink:${ctx.taskNameWithSubtasks}/${javaClass.simpleName}"),
+                Pair("time", CloudEventDateTimeFormatter.format(instant)),
+                Pair("subject", element.id),
+                Pair("log", "Sending sensor alarm report of station ${element.stationId} to data store"),
+                Pair("data", element)
             )
         )
     }
@@ -49,15 +57,6 @@ class ElasticSearchInsertionSinkFunction : ElasticsearchSinkFunction<SensorAlarm
             .index("flink-sensor-data")
             .type("sensor")
             .source(json)
-    }
-
-    private fun createDataProvenance(element: SensorAlarmReport): Provenance {
-        return Provenance(
-            id = "flink-${javaClass.simpleName}",
-            type = "sensorDataReport",
-            wasDerivedFrom = element.prov.id,
-            wasGeneratedBy = "flink-${javaClass.simpleName}"
-        )
     }
 
     companion object : KLogging() {
