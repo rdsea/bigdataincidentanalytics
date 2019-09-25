@@ -1,7 +1,10 @@
 from __future__ import print_function
 
+import time
+import datetime
 import os
 import json
+import uuid
 from numpy import array
 from math import sqrt
 
@@ -16,10 +19,18 @@ hdfsUrl = os.environ.get('HDFS_URL', default="hdfs://namenode:8020")
 
 
 def process_record(record):
-    logger.emit('hdfs.app.dataAsset', {
-        'log': 'Data read from HDFS',
-        'payload': record
-    })
+    logger.emit_with_time(
+        'hdfs.app.dataAsset', time.time(), {
+            'specversion': '0.3',
+            'id': str(uuid.uuid4()),
+            'type': tag + 'hdfs.app.dataAsset',
+            'time': str(datetime.datetime.utcnow().isoformat("T") + "Z"),
+            'source': 'Spark/KMeansSensorData(' + sc.applicationId + ')/process_record',
+            'subject': record["id"],
+            'log': 'Data read from HDFS',
+            'data': record
+        }
+    )
 
 
 if __name__ == "__main__":
@@ -37,11 +48,6 @@ if __name__ == "__main__":
         provDerivedFrom = ""
         for member in rdd.collect():
             json_rec = json.loads(member[1])
-            if dataIds:
-                dataIds += ", " + json_rec["id"]
-            else:
-                dataIds += json_rec["id"]
-                provDerivedFrom = json_rec["prov"]["id"]
             process_record(json_rec)
 
         json_rdd = rdd.map(lambda x: json.loads(x[1]))
@@ -57,16 +63,16 @@ if __name__ == "__main__":
 
 
         WSSSE = parsedData.map(lambda point: error(point)).reduce(lambda x, y: x + y)
-        logger.emit('ml.app.dataAsset', {
+        logger.emit_with_time('ml.app.dataAsset', time.time(), {
+            'specversion': '0.3',
+            'id': str(uuid.uuid4()),
+            'type': tag + 'ml.app.dataAsset',
+            'time': str(datetime.datetime.utcnow().isoformat("T") + "Z"),
+            'source': 'Spark/KMeansSensorData(' + sc.applicationId + ')/cluster_data',
+            'subject': str(WSSSE),
             'log': 'Within Set Sum of Squared Error computed',
             'data': {
-                'WSSSE': float(WSSSE),
-                'prov': {
-                    'id': 'spark',
-                    'wasDerivedFrom': provDerivedFrom,
-                    'type': 'calculatedValue',
-                    'wasGeneratedBy': 'spark-kmeans-ml'
-                }
+                'WSSSE': float(WSSSE)
             }
         })
 
@@ -78,9 +84,17 @@ if __name__ == "__main__":
         sc.stop()
         logger.close()
     except Exception as e:
-        logger.emit('hdfs.app.error', {
-            'log': 'ERROR cannot read from HDFS' + hdfsUrl,
-            'error': str(e)
-        })
+        logger.emit_with_time(
+            'hdfs.app.error', time.time(), {
+                'specversion': '0.3',
+                'id': str(uuid.uuid4()),
+                'type': tag + 'hdfs.app.error',
+                'source': 'Spark/KMeansSensorData(' + sc.applicationId + ')/main',
+                'time': str(datetime.datetime.utcnow().isoformat("T") + "Z"),
+                'subject': 'error',
+                'log': 'ERROR during data analysis',
+                'error': str(e)
+            }
+        )
         sc.stop()
         logger.close()

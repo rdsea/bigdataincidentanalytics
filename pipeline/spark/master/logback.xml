@@ -27,7 +27,7 @@
 
     <appender name="FLUENCY" class="ch.qos.logback.classic.AsyncAppender">
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-            <level>WARN</level>
+            <level>INFO</level>
         </filter>
         <!-- Max queue size of logs which is waiting to be sent (When it reach to the max size, the log will be disappeared). -->
         <queueSize>999</queueSize>
