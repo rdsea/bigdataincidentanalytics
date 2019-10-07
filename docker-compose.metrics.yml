@@ -24,6 +24,15 @@ services:
     networks:
       - iot-big-data
 
+  # "Like Prometheus, but for logs"
+  loki:
+    image: grafana/loki:latest
+    ports:
+      - 3100:3100
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - iot-big-data
+
   # CONTAINER ADVISOR
   cadvisor:
     image: google/cadvisor:latest
@@ -80,7 +89,7 @@ services:
 
   # GRAFANA FOR DISPLAYING METRICS
   grafana:
-    image: grafana/grafana:5.4.3
+    image: grafana/grafana:6.4.0
     container_name: grafana
     restart: always
     ports:
@@ -91,6 +100,19 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=password
     volumes:
       - ./monitoring/grafana/provisioning/:/etc/grafana/provisioning/
+
+  graphite_exporter:
+    image: prom/graphite-exporter
+    command: "--graphite.mapping-config=/tmp/graphite_mapping.conf"
+    container_name: graphite_exporter
+    volumes:
+      - /monitoring/prometheus/graphite_mapping.conf:/tmp/graphite_mapping.conf
+    ports:
+      - 9108:9108
+      - 9109:9109
+      - 9109:9109/udp
+    networks:
+      - iot-big-data
 
 networks:
   iot-big-data:
