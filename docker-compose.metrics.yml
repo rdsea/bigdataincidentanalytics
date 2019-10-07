@@ -24,15 +24,6 @@ services:
     networks:
       - iot-big-data
 
-  # "Like Prometheus, but for logs"
-  loki:
-    image: grafana/loki:latest
-    ports:
-      - 3100:3100
-    command: -config.file=/etc/loki/local-config.yaml
-    networks:
-      - iot-big-data
-
   # CONTAINER ADVISOR
   cadvisor:
     image: google/cadvisor:latest
@@ -101,12 +92,13 @@ services:
     volumes:
       - ./monitoring/grafana/provisioning/:/etc/grafana/provisioning/
 
+  # BRIDGE TO BRING SPARK METRICS INTO PROMETHEUS
   graphite_exporter:
     image: prom/graphite-exporter
     command: "--graphite.mapping-config=/tmp/graphite_mapping.conf"
     container_name: graphite_exporter
     volumes:
-      - /monitoring/prometheus/graphite_mapping.conf:/tmp/graphite_mapping.conf
+      - ./monitoring/prometheus/graphite_mapping.conf:/tmp/graphite_mapping.conf
     ports:
       - 9108:9108
       - 9109:9109

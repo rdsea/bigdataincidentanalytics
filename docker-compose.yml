@@ -24,7 +24,7 @@ services:
       - FLUENTD_TAG=com.rdsea.sensor
       - FLUENTD_HOST=fluentd
       - FLUENTD_PORT=24224
-      - RATE_MS=2000
+      - RATE_MS=500
     command: npm start -- -c /var/config/config.json
     << : *custom-logging
 
@@ -231,7 +231,7 @@ services:
     build: pipeline/spark/master
     container_name: spark-master
     ports:
-      - 8082:8080
+      - 8083:8080
       - 7077:7077
     environment:
       - ENABLE_INIT_DAEMON=false
@@ -242,6 +242,7 @@ services:
       - ./pipeline/hadoop/config/hdfs-site.xml:/etc/hadoop/hdfs-site.xml
       - ./pipeline/spark/config/spark-env.sh:/spark/conf/spark-env.sh
       - ./pipeline/spark/master/logback.xml:/spark/conf/logback.xml:ro
+      - ./pipeline/spark/master/metrics.properties:/spark/conf/metrics.properties
       - $ETC_LOCALTIME:/etc/localtime:ro
     networks:
       - iot-big-data
@@ -262,6 +263,7 @@ services:
       - ./pipeline/hadoop/config/hdfs-site.xml:/etc/hadoop/hdfs-site.xml
       - ./pipeline/spark/config/spark-env.sh:/spark/conf/spark-env.sh
       - ./pipeline/spark/worker/logback.xml:/spark/conf/logback.xml:ro
+      - ./pipeline/spark/worker/metrics.properties:/spark/conf/metrics.properties
       - $ETC_LOCALTIME:/etc/localtime:ro
     networks:
       - iot-big-data
@@ -286,6 +288,7 @@ services:
     volumes:
       - $ETC_LOCALTIME:/etc/localtime:ro
       - ./pipeline/spark/iot-big-data-spark/logback.xml:/spark/conf/logback.xml:ro
+      - ./pipeline/spark/iot-big-data-spark/metrics.properties:/spark/conf/metrics.properties
     networks:
       - iot-big-data
 

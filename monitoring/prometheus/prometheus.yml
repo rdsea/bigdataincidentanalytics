@@ -33,6 +33,12 @@ scrape_configs:
     static_configs:
       - targets: ['pushgateway:9091']
 
+  - job_name: 'spark'
+    honor_labels: true
+    scrape_interval: 5s
+    static_configs:
+      - targets: ['graphite_exporter:9108']
+
   - job_name: 'cadvisor'
     scrape_interval: 5s
     static_configs:
