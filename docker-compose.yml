@@ -13,10 +13,10 @@ services:
 
   ##### IoT SENSORS #####
   simplesensor:
-    #image: danielfuvesi/bigdataincidentanalytics:simplesensor
-    image: simplesensor:latest
+    image: danielfuvesi/bigdataincidentanalytics:simplesensor
     networks:
       - iot-big-data
+      - pipeline
     volumes:
       - ./pipeline/sensors/simplesensor:/var/config
       - $ETC_LOCALTIME:/etc/localtime:ro
@@ -35,6 +35,7 @@ services:
     domainname: iot-big-data
     networks:
       - iot-big-data
+      - pipeline
     ports:
       - 1883:1883
       - 9001:9001
@@ -68,6 +69,7 @@ services:
       - $ETC_LOCALTIME:/etc/localtime:ro
     networks:
       - iot-big-data
+      - pipeline
     command: jobmanager
     environment:
       - JOB_MANAGER_RPC_ADDRESS=jobmanager
@@ -84,6 +86,7 @@ services:
       - $ETC_LOCALTIME:/etc/localtime:ro
     networks:
       - iot-big-data
+      - pipeline
     depends_on:
       - flink_jobmanager
     command: taskmanager
@@ -106,6 +109,7 @@ services:
       - $ETC_LOCALTIME:/etc/localtime:ro
     networks:
       - iot-big-data
+      - pipeline
     ports:
       - 8080:8080
     environment:
@@ -120,6 +124,7 @@ services:
       - 8020
     networks:
       - iot-big-data
+      - pipeline
     volumes:
       - /hadoop/dfs/name
       - ./pipeline/hadoop/hadoop_setup.sh:/usr/local/bin/hadoop_setup.sh
@@ -137,6 +142,7 @@ services:
     container_name: datanode1
     networks:
       - iot-big-data
+      - pipeline
     volumes:
       - /hadoop/dfs/data
       - $ETC_LOCALTIME:/etc/localtime:ro
@@ -151,6 +157,7 @@ services:
     container_name: resourcemanager
     networks:
       - iot-big-data
+      - pipeline
     environment:
       - CORE_CONF_fs_defaultFS=hdfs://namenode:8020
       - YARN_CONF_yarn_log___aggregation___enable=true
@@ -167,6 +174,7 @@ services:
     container_name: nodemanager1
     networks:
       - iot-big-data
+      - pipeline
     environment:
       - CORE_CONF_fs_defaultFS=hdfs://namenode:8020
       - YARN_CONF_yarn_resourcemanager_hostname=resourcemanager
@@ -184,6 +192,7 @@ services:
       - 1880:1880
     networks:
       - iot-big-data
+      - pipeline
     volumes:
       - ./pipeline/nodered/data:/data
       - $ETC_LOCALTIME:/etc/localtime:ro
@@ -209,6 +218,7 @@ services:
       ES_JAVA_OPTS: "-Xmx256m -Xms256m"
     networks:
       - iot-big-data
+      - pipeline
 
   kibana:
     build:
@@ -221,6 +231,25 @@ services:
       - $ETC_LOCALTIME:/etc/localtime:ro
     ports:
       - 5601:5601
+    networks:
+      - iot-big-data
+    depends_on:
+      - elasticsearch
+
+  metricbeat:
+    build:
+      context: pipeline/elk/metricbeat/
+      args:
+        ELK_VERSION: $ELK_VERSION
+    container_name: metricbeat
+    user: root
+    volumes:
+      - ./pipeline/elk/metricbeat/config/metricbeat.docker.yml:/usr/share/metricbeat/metricbeat.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /sys/fs/cgroup:/hostfs/sys/fs/cgroup:ro
+      - /proc:/hostfs/proc:ro
+      - /:/hostfs:ro
+      - $ETC_LOCALTIME:/etc/localtime:ro
     networks:
       - iot-big-data
     depends_on:
@@ -246,6 +275,7 @@ services:
       - $ETC_LOCALTIME:/etc/localtime:ro
     networks:
       - iot-big-data
+      - pipeline
 
   spark-worker:
     build: pipeline/spark/worker
@@ -267,6 +297,7 @@ services:
       - $ETC_LOCALTIME:/etc/localtime:ro
     networks:
       - iot-big-data
+      - pipeline
 
   spark-app:
     build: pipeline/spark/iot-big-data-spark
@@ -291,6 +322,7 @@ services:
       - ./pipeline/spark/iot-big-data-spark/metrics.properties:/spark/conf/metrics.properties
     networks:
       - iot-big-data
+      - pipeline
 
   # THIS SERVICE IS DEFINED JUST FOR COMPLETENESS. FLUENTD *MUST* BE STARTED ON HOST BEFORE ANY OTHER SERVICE,
   # OTHERWISE THE OTHER CONTAINERS CAN'T START DUE TO MISSING LOGGING DRIVER.
@@ -331,4 +363,6 @@ services:
 
 networks:
   iot-big-data:
+    driver: bridge
+  pipeline:
     driver: bridge
