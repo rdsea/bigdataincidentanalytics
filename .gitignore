@@ -269,4 +269,4 @@ hs_err_pid*
 /pipeline/spark/iot-big-data-spark/Pipfile
 /pipeline/spark/iot-big-data-spark/Pipfile.lock
 /application_default_credentials.json
-/data collection/info.yaml
+/data collection/tosca/info.yaml

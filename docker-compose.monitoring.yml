@@ -1,0 +1,101 @@
+version: '3.4'
+
+services:
+
+  ##### ELASTICSEARCH FOR STORING LOGS, METRICS #####
+  elasticsearch:
+    build:
+      context: pipeline/elk/elasticsearch/
+      args:
+        ELK_VERSION: $ELK_VERSION
+    container_name: elasticsearch
+    volumes:
+      - ./pipeline/elk/elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
+      - $ETC_LOCALTIME:/etc/localtime:ro
+    ports:
+      - 9200:9200
+      - 9300:9300
+    environment:
+      ES_JAVA_OPTS: "-Xmx256m -Xms256m"
+    networks:
+      - iot-big-data
+      - pipeline
+
+  ##### KIBANA FOR VISUALIZATION, DISCOVERY #####
+  kibana:
+    build:
+      context: pipeline/elk/kibana/
+      args:
+        ELK_VERSION: $ELK_VERSION
+    container_name: kibana
+    volumes:
+      - ./pipeline/elk/kibana/config/:/usr/share/kibana/config:ro
+      - $ETC_LOCALTIME:/etc/localtime:ro
+    ports:
+      - 5601:5601
+    networks:
+      - iot-big-data
+    depends_on:
+      - elasticsearch
+
+  ##### METRICBEAT FOR CENTRALIZING METRICS (PROMETHEUS, DOCKER, K8S) IN ELASTICSEARCH #####
+  metricbeat:
+    build:
+      context: pipeline/elk/metricbeat/
+      args:
+        ELK_VERSION: $ELK_VERSION
+    container_name: metricbeat
+    user: root
+    volumes:
+      - ./pipeline/elk/metricbeat/config/metricbeat.docker.yml:/usr/share/metricbeat/metricbeat.yml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /sys/fs/cgroup:/hostfs/sys/fs/cgroup:ro
+      - /proc:/hostfs/proc:ro
+      - /:/hostfs:ro
+      - $ETC_LOCALTIME:/etc/localtime:ro
+    networks:
+      - iot-big-data
+    depends_on:
+      - elasticsearch
+
+  ##### FLUENTD FOR CENTRALIZING LOGS #####
+  fluentd:
+    build: logging/fluentd
+    #image: fluentd:gcp_onpremise # use this image if you want to forward logs into Google Stackdriver
+    container_name: fluentd
+    volumes:
+      #- ./logging/fluentd/gcp/onpremise:/fluentd/etc  # Mount this config for Stackdriver ingestion
+      - ./logging/fluentd/conf:/fluentd/etc # Mount this config for local use
+      - ./logging/fluentd/logs:/fluentd/log/bigdataincidentanalytics
+      - ./logging/fluentd/logs/pipeline:/fluentd/log/bigdataincidentanalytics/pipeline
+      # Mount the GCP credentials when ingesting to Stackdriver
+      #- ./application_default_credentials.json:/etc/google/auth/application_default_credentials.json
+      #- $ETC_LOCALTIME:/etc/localtime:ro
+    #environment: # Set this environment variable when ingesting to Stackdriver
+      #- APPLICATION_DEFAULT_CREDS="/etc/google/auth/application_default_credentials.json"
+    networks:
+      - iot-big-data
+    ports:
+      - 24224:24224
+      - 24224:24224/udp
+      - 9880:9880
+
+  # Just for showcasing different situations regarding monitoring and reasoning
+  neo4j:
+    build:
+      context: monitoring/topogen/
+      args:
+        CYPHER_FILE: graphDatabase.cypher
+    container_name: neo4j
+    restart: always
+    networks:
+      - iot-big-data
+    ports:
+      - 7474:7474
+      - 7687:7687
+
+networks:
+  iot-big-data:
+    driver: bridge
+  pipeline:
+    driver: bridge
