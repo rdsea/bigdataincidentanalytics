@@ -270,3 +270,6 @@ hs_err_pid*
 /pipeline/spark/iot-big-data-spark/Pipfile.lock
 /application_default_credentials.json
 /data collection/tosca/info.yaml
+/pipeline/elk/elasticsearch/data/*
+/monitoring/topogen/Pipfile
+/monitoring/topogen/Pipfile.lock

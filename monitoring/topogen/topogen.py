@@ -4,7 +4,7 @@ def process_type(type):
     print(type)
 
 
-file = open('tosca_sample.yml')
+file = open('topology_conf.yml')
 spec = yaml.safe_load_all(file)
 
 nodes = {}

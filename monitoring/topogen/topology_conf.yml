@@ -1,0 +1,9 @@
+pipeline:
+  components:
+    sensor:
+      functionalArea: Data Source
+      dataAsset: In Motion
+      analyticsPhase: Collection
+    mqtt:
+      predecessor: sensor
+
