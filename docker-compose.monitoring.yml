@@ -10,6 +10,7 @@ services:
         ELK_VERSION: $ELK_VERSION
     container_name: elasticsearch
     volumes:
+      - ./pipeline/elk/elasticsearch/data:/usr/share/elasticsearch/data
       - ./pipeline/elk/elasticsearch/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
       - $ETC_LOCALTIME:/etc/localtime:ro
     ports:
