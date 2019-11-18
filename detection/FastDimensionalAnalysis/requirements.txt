@@ -1,0 +1,8 @@
+numpy
+pyspark
+future
+pandas
+elasticsearch>=6.0.0,<7.0.0
+pandasticsearch
+IPython
+scikit-learn
