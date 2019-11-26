@@ -13,7 +13,7 @@ services:
 
   ##### IoT SENSORS #####
   simplesensor:
-    image: danielfuvesi/bigdataincidentanalytics:simplesensor
+    image: simplesensor-usv:latest
     networks:
       - iot-big-data
       - pipeline
