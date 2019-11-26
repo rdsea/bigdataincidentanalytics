@@ -16,7 +16,6 @@
   "editable": true,
   "gnetId": 179,
   "graphTooltip": 1,
-  "id": 5,
   "links": [],
   "panels": [
     {
@@ -63,6 +62,7 @@
       "maxDataPoints": 100,
       "nullPointMode": "connected",
       "nullText": null,
+      "options": {},
       "postfix": "",
       "postfixFontSize": "50%",
       "prefix": "",
@@ -83,7 +83,7 @@
       "tableColumn": "",
       "targets": [
         {
-          "expr": "(sum(node_memory_MemTotal) - sum(node_memory_MemFree+node_memory_Buffers+node_memory_Cached) ) / sum(node_memory_MemTotal) * 100",
+          "expr": "(sum(node_memory_total_bytes) - sum(node_memory_free_bytes) ) / sum(node_memory_total_bytes) * 100",
           "format": "time_series",
           "interval": "10s",
           "intervalFactor": 1,
@@ -149,6 +149,7 @@
       "maxDataPoints": 100,
       "nullPointMode": "connected",
       "nullText": null,
+      "options": {},
       "postfix": "",
       "postfixFontSize": "50%",
       "prefix": "",
@@ -169,7 +170,7 @@
       "tableColumn": "",
       "targets": [
         {
-          "expr": "sum(sum by (container_name)( rate(container_cpu_usage_seconds_total{image!=\"\"}[1m] ) )) / 17 * 100",
+          "expr": "sum (rate (container_cpu_usage_seconds_total{id=\"/docker\"}[1m])) / sum (machine_cpu_cores) * 100",
           "format": "time_series",
           "interval": "10s",
           "intervalFactor": 1,
@@ -235,6 +236,7 @@
       "maxDataPoints": 100,
       "nullPointMode": "connected",
       "nullText": null,
+      "options": {},
       "postfix": "",
       "postfixFontSize": "50%",
       "prefix": "",
@@ -287,6 +289,7 @@
       "editable": true,
       "error": false,
       "fill": 0,
+      "fillGradient": 0,
       "grid": {},
       "gridPos": {
         "h": 7,
@@ -313,6 +316,9 @@
       "linewidth": 2,
       "links": [],
       "nullPointMode": "connected",
+      "options": {
+        "dataLinks": []
+      },
       "percentage": false,
       "pointradius": 5,
       "points": false,
@@ -323,7 +329,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sort_desc(sum(rate(container_cpu_user_seconds_total{image!=\"\",name!~\"cadvisor|prometheus|grafana|pushgateway|mosquitto-exporter|elasticsearch-exporter\"}[1m])) by (container_label_com_docker_compose_service))",
+          "expr": "sort_desc(sum(rate(container_cpu_user_seconds_total{image!=\"\",name!~\"kibana|fluentd|cadvisor|prometheus|grafana|pushgateway|mosquitto-exporter|elasticsearch-exporter\"}[1m])) by (container_label_com_docker_compose_service))",
           "format": "time_series",
           "interval": "10s",
           "intervalFactor": 1,
@@ -385,6 +391,7 @@
       "editable": true,
       "error": false,
       "fill": 0,
+      "fillGradient": 0,
       "grid": {},
       "gridPos": {
         "h": 7,
@@ -411,6 +418,9 @@
       "linewidth": 2,
       "links": [],
       "nullPointMode": "connected",
+      "options": {
+        "dataLinks": []
+      },
       "percentage": false,
       "pointradius": 5,
       "points": false,
@@ -421,7 +431,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sort_desc(sum(container_memory_usage_bytes{image!=\"\",name!~\"cadvisor|prometheus|grafana|pushgateway|mosquitto-exporter|elasticsearch-exporter\"}) by (container_label_com_docker_compose_service))",
+          "expr": "sort_desc(sum(container_memory_usage_bytes{image!=\"\",name!~\"kibana|fluentd|cadvisor|prometheus|grafana|pushgateway|mosquitto-exporter|elasticsearch-exporter\"}) by (container_label_com_docker_compose_service))",
           "format": "time_series",
           "interval": "10s",
           "intervalFactor": 1,
@@ -483,6 +493,7 @@
       "editable": true,
       "error": false,
       "fill": 0,
+      "fillGradient": 0,
       "grid": {},
       "gridPos": {
         "h": 7,
@@ -509,6 +520,9 @@
       "linewidth": 2,
       "links": [],
       "nullPointMode": "connected",
+      "options": {
+        "dataLinks": []
+      },
       "percentage": false,
       "pointradius": 5,
       "points": false,
@@ -519,7 +533,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sort_desc(sum by (container_label_com_docker_compose_service) (rate(container_network_receive_bytes_total{image!=\"\",name!~\"cadvisor|prometheus|grafana|pushgateway|mosquitto-exporter|elasticsearch-exporter\"}[1m] ) ))",
+          "expr": "sort_desc(sum by (container_label_com_docker_compose_service) (rate(container_network_receive_bytes_total{image!=\"\",name!~\"kibana|fluentd|cadvisor|prometheus|grafana|pushgateway|mosquitto-exporter|elasticsearch-exporter\"}[1m] ) ))",
           "format": "time_series",
           "interval": "10s",
           "intervalFactor": 1,
@@ -581,6 +595,7 @@
       "editable": true,
       "error": false,
       "fill": 0,
+      "fillGradient": 0,
       "grid": {},
       "gridPos": {
         "h": 7,
@@ -607,6 +622,9 @@
       "linewidth": 2,
       "links": [],
       "nullPointMode": "connected",
+      "options": {
+        "dataLinks": []
+      },
       "percentage": false,
       "pointradius": 5,
       "points": false,
@@ -617,7 +635,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sort_desc(sum by (container_label_com_docker_compose_service) (rate(container_network_transmit_bytes_total{image!=\"\",name!~\"cadvisor|prometheus|grafana|pushgateway|mosquitto-exporter|elasticsearch-exporter\"}[1m] ) ))",
+          "expr": "sort_desc(sum by (container_label_com_docker_compose_service) (rate(container_network_transmit_bytes_total{image!=\"\",name!~\"kibana|fluentd|cadvisor|prometheus|grafana|pushgateway|mosquitto-exporter|elasticsearch-exporter\"}[1m] ) ))",
           "format": "time_series",
           "intervalFactor": 2,
           "legendFormat": "{{ container_label_com_docker_compose_service }}",
@@ -670,7 +688,7 @@
     }
   ],
   "refresh": "10s",
-  "schemaVersion": 16,
+  "schemaVersion": 20,
   "style": "dark",
   "tags": [
     "docker"
@@ -710,5 +728,5 @@
   "timezone": "browser",
   "title": "Docker Dashboard",
   "uid": "vvM7tn9mk",
-  "version": 1
+  "version": 2
 }

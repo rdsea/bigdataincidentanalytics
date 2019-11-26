@@ -24,7 +24,7 @@ services:
       - FLUENTD_TAG=com.rdsea.sensor
       - FLUENTD_HOST=fluentd
       - FLUENTD_PORT=24224
-      - RATE_MS=500
+      - RATE_MS=1000
     command: npm start -- -c /var/config/config.json
     << : *custom-logging
 

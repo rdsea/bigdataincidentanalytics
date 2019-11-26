@@ -1,0 +1,60 @@
+[
+  {
+    "targets": [ "mosquitto-exporter:9234"],
+    "labels": {
+      "job": "mqtt"
+    }
+  },
+  {
+    "targets": [ "jobmanager:9249"],
+    "labels": {
+      "job": "flink-jobmanager"
+    }
+  },
+  {
+    "targets": [ "bigdataincidentanalytics_flink_taskmanager_1:9249"],
+    "labels": {
+      "job": "flink-taskmanager"
+    }
+  },
+  {
+    "targets": [ "pushgateway:9091"],
+    "labels": {
+      "job": "nifi",
+      "honor_labels": "true",
+      "scrape_interval": "10s"
+    }
+  },
+  {
+    "targets": [ "graphite_exporter:9108"],
+    "labels": {
+      "job": "spark"
+    }
+  },
+  {
+    "targets": [ "hadoop-namenode-exporter:9070"],
+    "labels": {
+      "job": "hdfs-namenode"
+    }
+  },
+  {
+    "targets": [ "hadoop-resourcemanager-exporter:9088"],
+    "labels": {
+      "job": "hdfs-resourcemanager"
+    }
+  },
+  {
+    "targets": [ "cadvisor:8080"],
+    "labels": {
+      "job": "cadvisor",
+      "scrape_interval": "5s"
+    }
+  },
+  {
+    "targets": [ "host.docker.internal:9100"],
+    "labels": {
+      "job": "node",
+      "scrape_interval": "5s"
+    }
+  }
+]
