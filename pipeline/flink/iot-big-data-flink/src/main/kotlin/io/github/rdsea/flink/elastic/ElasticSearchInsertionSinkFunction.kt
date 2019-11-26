@@ -55,7 +55,7 @@ class ElasticSearchInsertionSinkFunction : ElasticsearchSinkFunction<SensorAlarm
 
         return Requests.indexRequest()
             .index("flink-sensor-data")
-            .type("sensor")
+            .type("")   // empty string workaround: starting with 7.0 Elasticsearch doesn't support "type" in bulk requests
             .source(json)
     }
 

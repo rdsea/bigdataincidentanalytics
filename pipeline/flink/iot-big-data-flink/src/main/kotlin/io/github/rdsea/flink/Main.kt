@@ -31,12 +31,12 @@ class Main {
             val config = checkArgs(args)
             val env = StreamExecutionEnvironment.getExecutionEnvironment()
             env
-                .addSource(MqttSource(config.mqttUri, config.mqttTopic)) // read from MQTT
-                .map(MqttMessageToSensorRecordMapper()) // map to POJOs
+                .addSource(MqttSource(config.mqttUri, config.mqttTopic),"MqttSource") // read from MQTT
+                .map(MqttMessageToSensorRecordMapper()).name("MqttMessageToSensorRecordMap") // map to POJOs
                 .keyBy(SensorRecordKeySelector()) // group records by "stationId"
                 .countWindow(3) // collect 3 records per group
-                .apply(SensorDataWindowFunction()) // execute analytics for each group of 3 records
-                .addSink(ElasticSearchSinkProvider.get(config)) // send them to ElasticSearch
+                .apply(SensorDataWindowFunction()).name("StationAlarmAggregationFunction") // execute analytics for each group of 3 records
+                .addSink(ElasticSearchSinkProvider.get(config)).name("ElasticsearchSink") // send them to ElasticSearch
 
             env.execute("IoT Big Data Analytics Example")
         }
