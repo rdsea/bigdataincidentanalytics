@@ -1,6 +1,6 @@
 package io.github.rdsea.flink.elastic
 
-import io.github.rdsea.flink.domain.SensorAlarmReport
+import io.github.rdsea.flink.domain.WindowedSensorReport
 import io.github.rdsea.flink.util.Configuration
 import org.apache.flink.streaming.connectors.elasticsearch6.ElasticsearchSink
 import org.apache.http.HttpHost
@@ -18,8 +18,8 @@ class ElasticSearchSinkProvider private constructor() {
 
     companion object {
 
-        fun get(configuration: Configuration): ElasticsearchSink<SensorAlarmReport> {
-            val elasticSinkBuilder = ElasticsearchSink.Builder<SensorAlarmReport>(listOf(HttpHost(configuration.elasticUri.host, configuration.elasticUri.port)), ElasticSearchInsertionSinkFunction())
+        fun get(configuration: Configuration): ElasticsearchSink<WindowedSensorReport> {
+            val elasticSinkBuilder = ElasticsearchSink.Builder<WindowedSensorReport>(listOf(HttpHost(configuration.elasticUri.host, configuration.elasticUri.port)), ElasticSearchInsertionSinkFunction())
             elasticSinkBuilder.setBulkFlushMaxActions(1)
             return elasticSinkBuilder.build()
         }

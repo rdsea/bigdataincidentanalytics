@@ -57,7 +57,7 @@ class MqttSource(
                 Pair("source", "flink:${runtimeContext.taskNameWithSubtasks}/UDF/${javaClass.simpleName}"),
                 Pair("time", CloudEventDateTimeFormatter.format(instant)),
                 Pair("subject", "signpost"),
-                Pair("log", "Successfully connected to MQTT broker($uri, $topic)")
+                Pair("message", "Successfully connected to MQTT broker($uri, $topic)")
             )
         )
 
@@ -75,8 +75,8 @@ class MqttSource(
                     Pair("type", "$FLUENTD_PREFIX.mqtt.app.dataAsset"),
                     Pair("source", "flink:${runtimeContext.taskNameWithSubtasks}/UDF/${javaClass.simpleName}"),
                     Pair("time", CloudEventDateTimeFormatter.format(time)),
-                    Pair("subject", json["id"] ?: error("")),
-                    Pair("log", "MQTT message received"),
+                    Pair("subject", "${json["device_id"]}-${json["time"]}"),
+                    Pair("message", "MQTT message received"),
                     Pair("data", json)
                 )
             )
@@ -96,7 +96,7 @@ class MqttSource(
                 Pair("source", "flink:${runtimeContext.taskNameWithSubtasks}/UDF/${javaClass.simpleName}"),
                 Pair("time", CloudEventDateTimeFormatter.format(eventTime)),
                 Pair("subject", "signpost"),
-                Pair("log", "Disconnected from MQTT source($uri, $topic)")
+                Pair("message", "Disconnected from MQTT source($uri, $topic)")
             )
         )
     }
@@ -114,7 +114,7 @@ class MqttSource(
                 Pair("source", "flink:${runtimeContext.taskNameWithSubtasks}/UDF/${javaClass.simpleName}"),
                 Pair("time", CloudEventDateTimeFormatter.format(eventTime)),
                 Pair("subject", "signpost"),
-                Pair("log", "MQTT Connection cancelled($uri, $topic)")
+                Pair("message", "MQTT Connection cancelled($uri, $topic)")
             )
         )
     }

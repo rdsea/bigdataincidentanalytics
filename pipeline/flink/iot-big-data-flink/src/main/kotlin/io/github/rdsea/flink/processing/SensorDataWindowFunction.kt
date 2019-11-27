@@ -2,9 +2,10 @@ package io.github.rdsea.flink.processing
 
 import io.github.rdsea.flink.FLUENCY
 import io.github.rdsea.flink.FLUENTD_PREFIX
-import io.github.rdsea.flink.domain.SensorAlarmReport
+import io.github.rdsea.flink.domain.WindowedSensorReport
 import io.github.rdsea.flink.domain.SensorRecord
 import io.github.rdsea.flink.util.CloudEventDateTimeFormatter
+import io.github.rdsea.flink.util.LocalDateTimeJsonSerializer
 import org.apache.flink.streaming.api.functions.windowing.WindowFunction
 import org.apache.flink.streaming.api.windowing.windows.GlobalWindow
 import org.apache.flink.util.Collector
@@ -21,7 +22,7 @@ import java.util.UUID
  * @version 1.0.0
  * @since 1.0.0
  */
-class SensorDataWindowFunction : WindowFunction<SensorRecord, SensorAlarmReport, String, GlobalWindow> {
+class SensorDataWindowFunction : WindowFunction<SensorRecord, WindowedSensorReport, String, GlobalWindow> {
 
     /**
      * Evaluates the window and outputs none or several elements.
@@ -37,11 +38,12 @@ class SensorDataWindowFunction : WindowFunction<SensorRecord, SensorAlarmReport,
         key: String,
         window: GlobalWindow,
         input: MutableIterable<SensorRecord>,
-        out: Collector<SensorAlarmReport>
+        out: Collector<WindowedSensorReport>
     ) {
         val records = input.iterator().asSequence().toList()
         val reportId = UUID.randomUUID().toString()
-        val result = SensorAlarmReport(reportId, key, records.size, records.map { it.sensorValue }.average(), records.map { it.id })
+        val result = WindowedSensorReport(reportId, key, records.size, records.map { it.humidity }.average(), records.map { it.temperature }.average(),
+            records.map { it.time.format(LocalDateTimeJsonSerializer.formatter) })
 
         val instant = Instant.now()
         FLUENCY.emit("$FLUENTD_PREFIX.aggregation.app.dataAsset",
@@ -54,7 +56,7 @@ class SensorDataWindowFunction : WindowFunction<SensorRecord, SensorAlarmReport,
                 Pair("time", CloudEventDateTimeFormatter.format(instant)),
                 Pair("subject", result.id),
                 Pair("data", result),
-                Pair("log", "Periodic aggregation of sensor station $key")
+                Pair("message", "Periodic aggregation of humidity and temperature of sensor deviceId: $key")
             )
         )
         out.collect(result)

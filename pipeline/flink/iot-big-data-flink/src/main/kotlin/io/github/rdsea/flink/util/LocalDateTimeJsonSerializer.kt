@@ -23,12 +23,14 @@ import java.time.format.DateTimeFormatter
 class LocalDateTimeJsonSerializer : JsonSerializer<LocalDateTime>, JsonDeserializer<LocalDateTime> {
 
     override fun serialize(src: LocalDateTime, typeOfSrc: Type, context: JsonSerializationContext): JsonElement {
-        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneId.systemDefault())
         return JsonPrimitive(src.format(formatter))
     }
 
     override fun deserialize(json: JsonElement, typeOfT: Type, context: JsonDeserializationContext): LocalDateTime {
-        val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneId.systemDefault())
         return LocalDateTime.parse(json.asString, formatter)
+    }
+
+    companion object {
+        val formatter: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'").withZone(ZoneId.systemDefault())
     }
 }

@@ -15,6 +15,6 @@ import org.apache.flink.api.java.functions.KeySelector
 class SensorRecordKeySelector : KeySelector<SensorRecord, String> {
 
     override fun getKey(value: SensorRecord): String {
-        return value.stationId
+        return value.deviceId
     }
 }
