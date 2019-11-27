@@ -112,6 +112,8 @@ services:
       - pipeline
     ports:
       - 8080:8080
+    expose:
+      - 9092
     environment:
       - LOG_COMPONENT_TAG=com.rdsea.nifi.platform
 

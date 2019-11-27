@@ -1,6 +1,6 @@
-FROM apache/nifi:1.8.0
+FROM apache/nifi:1.10.0
 
-ADD https://github.com/mkjoerg/nifi-prometheus-reporter/releases/download/nifi-1.8.0/nifi-prometheus-nar-1.8.0.nar ${NIFI_BASE_DIR}/nifi-current/lib
+#ADD https://github.com/mkjoerg/nifi-prometheus-reporter/releases/download/nifi-1.8.0/nifi-prometheus-nar-1.8.0.nar ${NIFI_BASE_DIR}/nifi-current/lib
 
 # Add dependencies for log collection: Fluency, Logback more appenders + their dependencies
 # These libraries need to be added to both "lib" and "bootstrap"
