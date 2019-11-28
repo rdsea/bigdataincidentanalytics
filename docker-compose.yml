@@ -268,6 +268,7 @@ services:
       - $ETC_LOCALTIME:/etc/localtime:ro
       - ./pipeline/spark/iot-big-data-spark/logback.xml:/spark/conf/logback.xml:ro
       - ./pipeline/spark/iot-big-data-spark/metrics.properties:/spark/conf/metrics.properties
+      - ./pipeline/spark/iot-big-data-spark/predictions:/spark/data/predictions
     networks:
       - iot-big-data
       - pipeline

@@ -292,8 +292,8 @@ module.exports = {
                         .source(`Node-Red/Sensor-Data-Flow`)
                         .id(uuidv4())
                         .time(date)
-                        .subject("platform signpost")
-                        .addExtension("log",`${message.msg}`)
+                        .subject("signpost")
+                        .addExtension("message",`${message.msg}`)
                         .addExtension("level",`${message.level}`);
                     FluentLogger.emit(
                         'platform',

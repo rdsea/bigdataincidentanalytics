@@ -5,12 +5,13 @@ import datetime
 import os
 import json
 import uuid
-from numpy import array
-from math import sqrt
 
 from pyspark import SparkContext
-from pyspark.mllib.clustering import KMeans, KMeansModel
+from pyspark.ml.evaluation import ClusteringEvaluator
 from fluent import asyncsender as sender
+from pyspark.ml.feature import VectorAssembler
+from pyspark.sql.context import SQLContext
+from pyspark.ml.clustering import KMeans
 
 tag = os.environ.get('FLUENTD_TAG_PREFIX', default="spark-kmeans")
 host = os.environ.get('FLUENTD_HOST', default="localhost")
@@ -26,8 +27,8 @@ def process_record(record):
             'type': tag + 'hdfs.app.dataAsset',
             'time': str(datetime.datetime.utcnow().isoformat("T") + "Z"),
             'source': 'Spark/KMeansSensorData(' + sc.applicationId + ')/process_record',
-            'subject': record["id"],
-            'log': 'Data read from HDFS',
+            'subject': record["device_id"] + record["time"],
+            'message': 'Data read from HDFS',
             'data': record
         }
     )
@@ -38,61 +39,70 @@ if __name__ == "__main__":
     sc = SparkContext(appName="KMeansSensorData",
                       master="spark://" + os.environ.get('SPARK_MASTER_NAME', default="spark-master") + ":"
                              + os.environ.get('SPARK_MASTER_PORT', default="7077"))  # SparkContext
-
+    sqlContext = SQLContext(sc)
     # Load and parse the data
     try:
         data = sc.wholeTextFiles(hdfsUrl)
 
         rdd = sc.wholeTextFiles(hdfsUrl)
-        dataIds = ""
-        provDerivedFrom = ""
         for member in rdd.collect():
             json_rec = json.loads(member[1])
             process_record(json_rec)
 
         json_rdd = rdd.map(lambda x: json.loads(x[1]))
-        parsedData = json_rdd.map(lambda sensor_json: array([float(sensor_json["value"])]))
+        df = sqlContext.read.json(json_rdd)
+        vecAssembler = VectorAssembler(inputCols=["humidity", "temperature"], outputCol="features")
+        new_df = vecAssembler.transform(df)
 
         # Build the model (cluster the data)
-        clusters = KMeans.train(parsedData, 2, maxIterations=10, initializationMode="random")
+        k_means = KMeans(k=2, seed=1)
+        model = k_means.fit(new_df.select('features'))
 
-        # Evaluate clustering by computing Within Set Sum of Squared Errors
-        def error(point):
-            center = clusters.centers[clusters.predict(point)]
-            return sqrt(sum([x ** 2 for x in (point - center)]))
-
-
-        WSSSE = parsedData.map(lambda point: error(point)).reduce(lambda x, y: x + y)
+        predictions = model.transform(new_df)
+        file_name = 'predictions_' + str(datetime.datetime.utcnow().isoformat("T") + "Z") + '.csv'
+        predictions.write.csv('/spark/data/predictions/' + file_name)
         logger.emit_with_time('ml.app.dataAsset', time.time(), {
             'specversion': '0.3',
             'id': str(uuid.uuid4()),
             'type': tag + 'ml.app.dataAsset',
             'time': str(datetime.datetime.utcnow().isoformat("T") + "Z"),
             'source': 'Spark/KMeansSensorData(' + sc.applicationId + ')/cluster_data',
-            'subject': str(WSSSE),
-            'log': 'Within Set Sum of Squared Error computed',
-            'data': {
-                'WSSSE': float(WSSSE)
-            }
+            'subject': file_name,
+            'message': 'KMeans prediction written to file (' + file_name + ')'
         })
 
-        # Save and load model
-        # clusters.save(sc, "target/org/apache/spark/PythonKMeansExample/KMeansModel")
-        # sameModel = KMeansModel.load(sc, "target/org/apache/spark/PythonKMeansExample/KMeansModel")
-        # $example off$
+        # Evaluate clustering by computing Silhouette score
+        evaluator = ClusteringEvaluator()
+
+        silhouette = evaluator.evaluate(predictions)
+
+        unique_id = str(uuid.uuid4())
+        logger.emit_with_time('ml.app.dataAsset', time.time(), {
+            'specversion': '0.3',
+            'id': unique_id,
+            'type': tag + 'ml.app.dataAsset',
+            'time': str(datetime.datetime.utcnow().isoformat("T") + "Z"),
+            'source': 'Spark/KMeansSensorData(' + sc.applicationId + ')/cluster_data',
+            'subject': 'clustering_analysis_result_' + unique_id,
+            'message': 'Within Set Sum of Squared Error computed',
+            'data': {
+                'silhouette_score': float(silhouette),
+                'cluster_centers': model.clusterCenters()
+            }
+        })
 
         sc.stop()
         logger.close()
     except Exception as e:
         logger.emit_with_time(
-            'hdfs.app.error', time.time(), {
+            'ml.app.error', time.time(), {
                 'specversion': '0.3',
                 'id': str(uuid.uuid4()),
-                'type': tag + 'hdfs.app.error',
+                'type': tag + 'ml.app.error',
                 'source': 'Spark/KMeansSensorData(' + sc.applicationId + ')/main',
                 'time': str(datetime.datetime.utcnow().isoformat("T") + "Z"),
                 'subject': 'error',
-                'log': 'ERROR during data analysis',
+                'message': 'ERROR during data analysis',
                 'error': str(e)
             }
         )
