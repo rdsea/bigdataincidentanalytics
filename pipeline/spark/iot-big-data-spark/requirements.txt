@@ -5,3 +5,4 @@ fluent
 numpy
 pyspark
 future
+pandas
