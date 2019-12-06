@@ -273,3 +273,6 @@ hs_err_pid*
 /pipeline/elk/elasticsearch/data/*
 /monitoring/topogen/Pipfile
 /monitoring/topogen/Pipfile.lock
+/monitoring/mqtt-to-kafka/package-lock.json
+/monitoring/mqtt-to-kafka/node_modules/
+/pipeline/flink/iot-big-data-flink/out/

@@ -95,6 +95,58 @@ services:
       - 7474:7474
       - 7687:7687
 
+  zookeeper:
+    image: wurstmeister/zookeeper
+    container_name: zookeeper
+    networks:
+      - iot-big-data
+      - pipeline
+    ports:
+      - 2181:2181
+
+  kafka:
+    image: wurstmeister/kafka:2.12-2.3.0
+    container_name: kafka
+    environment:
+      KAFKA_CREATE_TOPICS: "sensorData:3:1"
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: INSIDE://:29092,OUTSIDE://192.168.0.94:9092
+      KAFKA_LISTENERS: INSIDE://:29092,OUTSIDE://:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - iot-big-data
+      - pipeline
+    ports:
+      - 9092:9092
+
+  kafdrop:
+    image: obsidiandynamics/kafdrop
+    restart: "no"
+    ports:
+      - 9000:9000
+    environment:
+      KAFKA_BROKERCONNECT: "kafka:29092"
+      JVM_OPTS: "-Xms32M -Xmx64M"
+    networks:
+      - iot-big-data
+    depends_on:
+      - kafka
+
+  mqtt-to-kafka:
+    build:
+      context: monitoring/mqtt-to-kafka/
+    container_name: mqtt-to-kafka
+    environment:
+      - NODE_ENV=production
+    volumes:
+      - ./monitoring/mqtt-to-kafka/src/config.js:/usr/src/app/config.js
+    networks:
+      - iot-big-data
+      - pipeline
+
 networks:
   iot-big-data:
     driver: bridge
