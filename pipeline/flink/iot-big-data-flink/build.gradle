@@ -27,10 +27,10 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
     ktlint "com.github.shyiko:ktlint:0.30.0"
     implementation 'org.slf4j:slf4j-simple:1.7.25'
-    implementation "org.apache.flink:flink-java:1.7.1"
-    implementation "org.apache.flink:flink-streaming-java_2.12:1.7.1"
+    implementation "org.apache.flink:flink-java:1.9.1"
+    implementation "org.apache.flink:flink-streaming-java_2.12:1.9.1"
     implementation "org.fusesource.mqtt-client:mqtt-client:1.14"
-    implementation "org.apache.flink:flink-connector-elasticsearch6_2.11:1.7.1"
+    implementation "org.apache.flink:flink-connector-elasticsearch6_2.11:1.9.1"
     implementation 'io.github.microutils:kotlin-logging:1.6.22'
     implementation 'com.google.code.gson:gson:2.8.5'
     implementation 'org.komamitsu:fluency-core:2.1.0'

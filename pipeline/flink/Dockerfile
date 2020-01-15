@@ -1,4 +1,4 @@
-FROM flink:1.7.2-alpine
+FROM flink:1.9.1
 
 # Remove Log4j libraries in order for Logback to take precedence as described in https://ci.apache.org/projects/flink/flink-docs-stable/dev/best_practices.html#use-logback-when-running-flink-on-a-cluster
 RUN rm $FLINK_HOME/lib/log4j-1.2.*.jar
@@ -21,7 +21,7 @@ ADD http://central.maven.org/maven2/org/slf4j/log4j-over-slf4j/1.7.26/log4j-over
 
 RUN echo "metrics.reporters: prom" >> "$FLINK_HOME/conf/flink-conf.yaml"; \
     echo "metrics.reporter.prom.class: org.apache.flink.metrics.prometheus.PrometheusReporter" >> "$FLINK_HOME/conf/flink-conf.yaml"; \
-    mv $FLINK_HOME/opt/flink-metrics-prometheus-1.7.2.jar $FLINK_HOME/lib
+    mv $FLINK_HOME/opt/flink-metrics-prometheus-1.9.1.jar $FLINK_HOME/lib
 
 USER root
 
