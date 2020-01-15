@@ -209,7 +209,8 @@ services:
     container_name: spark-master
     ports:
       - 8083:8080
-      - 7077:7077
+    expose:
+      - 7077
     environment:
       - ENABLE_INIT_DAEMON=false
       - "constraint:node==master"
