@@ -57,7 +57,7 @@ if __name__ == "__main__":
         .getOrCreate()
 
     # df = query_elasticsearch()
-    df = pd.read_csv("./data/preprocessing/data_reduced.csv")
+    df = pd.read_csv("data/preprocessing/data_reduced.csv")
     df = perform_one_hot_encoding(df)
 
     df = df[df.columns.drop(list(df.filter(regex='MISSING')))]
