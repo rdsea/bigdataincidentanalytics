@@ -108,7 +108,7 @@ services:
     image: wurstmeister/kafka:2.12-2.3.0
     container_name: kafka
     environment:
-      KAFKA_CREATE_TOPICS: "sensorData:3:1"
+      KAFKA_CREATE_TOPICS: "sensorData:3:1,signals:3:1"
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
       KAFKA_ADVERTISED_LISTENERS: INSIDE://:29092,OUTSIDE://192.168.0.94:9092
       KAFKA_LISTENERS: INSIDE://:29092,OUTSIDE://:9092

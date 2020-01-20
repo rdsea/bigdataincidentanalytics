@@ -14,6 +14,10 @@ RUN buildDeps="sudo make gcc g++ libc-dev ruby-dev" \
  && sudo gem install \
          fluent-plugin-grafana-loki \
  && sudo gem install \
+          fluent-plugin-kafka \
+ && sudo gem install \
+           fluent-plugin-rewrite-tag-filter \
+ && sudo gem install \
          fluent-plugin-record-modifier --no-document \
  && sudo gem sources --clear-all \
  && SUDO_FORCE_REMOVE=yes \
