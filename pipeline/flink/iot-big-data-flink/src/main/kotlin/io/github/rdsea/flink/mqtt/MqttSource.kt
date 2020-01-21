@@ -36,6 +36,7 @@ class MqttSource(
 
     override fun open(parameters: Configuration?) {
         mqtt = MQTT()
+        mqtt.setClientId("flink-client-${UUID.randomUUID()}".take(23))
     }
 
     override fun run(ctx: SourceFunction.SourceContext<MqttMessage>) {
