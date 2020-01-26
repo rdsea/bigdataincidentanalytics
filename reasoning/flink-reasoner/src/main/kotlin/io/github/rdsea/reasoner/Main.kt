@@ -1,13 +1,10 @@
-package io.github.rdsea.cep
+package io.github.rdsea.reasoner
 
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
+import io.github.rdsea.reasoner.source.KafkaRecordMapFunction
+import java.util.Properties
 import org.apache.flink.api.common.serialization.SimpleStringSchema
-import org.apache.flink.streaming.api.datastream.DataStream
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment
 import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer
-import java.lang.IllegalArgumentException
-import java.util.Properties
 
 /**
  * <h4>About this class</h4>
@@ -21,8 +18,6 @@ import java.util.Properties
 class Main {
 
     companion object {
-        private val gson = Gson()
-        private val typeToken = object : TypeToken<Map<String, Any>>() {}.type
 
         @JvmStatic fun main(args: Array<String>) {
             checkArgs(args)
@@ -32,14 +27,12 @@ class Main {
             val properties = Properties()
             properties.setProperty("bootstrap.servers", args[0])
             properties.setProperty("group.id", args[1])
-            val dataStream: DataStream<Map<String, Any>> = env
+            env
                 .addSource(FlinkKafkaConsumer("signals", SimpleStringSchema(), properties))
-                .map {
-                    val json: Map<String, Any> = gson.fromJson(it, typeToken)
-                    json
-                }
+                .map(KafkaRecordMapFunction()).name("KafkaRecordMapFunction")
+                .print()
 
-            env.execute("Complex Event Processing")
+            env.execute("Incident Reasoning")
         }
 
         private fun checkArgs(args: Array<String>) {
