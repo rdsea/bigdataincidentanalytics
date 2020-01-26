@@ -276,3 +276,4 @@ hs_err_pid*
 /monitoring/mqtt-to-kafka/package-lock.json
 /monitoring/mqtt-to-kafka/node_modules/
 /pipeline/flink/iot-big-data-flink/out/
+/reasoning/database/data/

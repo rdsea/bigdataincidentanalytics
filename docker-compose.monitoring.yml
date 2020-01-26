@@ -81,14 +81,19 @@ services:
       - 24224:24224/udp
       - 9880:9880
 
-  # Just for showcasing different situations regarding monitoring and reasoning
   neo4j:
-    build:
-      context: monitoring/topogen/
-      args:
-        CYPHER_FILE: graphDatabase.cypher
+    #image: neo4j/neo4j-experimental:4.0.0-rc01
+    image: neo4j:3.5.14
     container_name: neo4j
-    restart: always
+    environment:
+      #- NEO4JLABS_PLUGINS=["apoc"]
+      - NEO4J_dbms_security_procedures_unrestricted=apoc.*,algo.*
+      - NEO4J_AUTH=neo4j/test
+    volumes:
+      - ./reasoning/database/import:/var/lib/neo4j/import
+      - ./reasoning/database/data:/data
+      - ./reasoning/database/neo4j-graph-algorithms-3.5.14.0-standalone.jar:/var/lib/neo4j/plugins/neo4j-graph-algorithms-3.5.14.0-standalone.jar
+      - ./reasoning/database/apoc-3.5.0.7-all.jar:/var/lib/neo4j/plugins/apoc-3.5.0.7-all.jar
     networks:
       - iot-big-data
     ports:
