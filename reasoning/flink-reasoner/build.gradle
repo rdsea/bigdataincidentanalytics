@@ -1,5 +1,3 @@
-//import com.github.jengelman.gradle.plugins.shadow.transformers.AppendingTransformer
-
 plugins {
     id 'org.jetbrains.kotlin.jvm' version '1.3.61'
     id 'com.github.johnrengelman.shadow' version '5.2.0'
@@ -31,10 +29,8 @@ dependencies {
     implementation "org.apache.flink:flink-connector-elasticsearch6_2.11:1.9.1"
     implementation "org.apache.flink:flink-cep_2.12:1.9.1"
     implementation "org.apache.flink:flink-connector-kafka_2.12:1.9.1"
-    implementation 'io.github.microutils:kotlin-logging:1.6.22'
     implementation 'com.google.code.gson:gson:2.8.6'
-    implementation 'org.neo4j.driver:neo4j-java-driver:1.7.5'
-
+    implementation 'org.neo4j.driver:neo4j-java-driver:4.0.0'
 }
 
 compileKotlin {
@@ -61,7 +57,4 @@ task ktlintFormat(type: JavaExec, group: "formatting") {
 
 shadowJar {
     baseName = 'flink-reasoner'
-    //transform(AppendingTransformer) {
-    //    resource = 'reference.conf'
-   // }
 }
