@@ -1,7 +1,8 @@
 package io.github.rdsea.reasoner.dao
 
 import io.github.rdsea.reasoner.domain.CompositeSignal
-import io.github.rdsea.reasoner.domain.SignalNode
+import io.github.rdsea.reasoner.domain.Incident
+import io.github.rdsea.reasoner.domain.Signal
 import java.util.Optional
 
 /**
@@ -17,13 +18,15 @@ interface DAO {
 
     fun initialize()
 
-    fun readSignalByName(signalName: String): Optional<SignalNode>
+    fun readSignalByName(signalName: String): Optional<Signal>
 
-    fun updateSignal(signal: SignalNode)
+    fun updateSignal(signal: Signal)
 
     fun readCompositeSignalsOfSignalByName(signalName: String): List<CompositeSignal>
 
     fun updateCompositeSignal(compositeSignal: CompositeSignal)
+
+    fun readIncidentsAndSignalsOfCompositeSignal(compositeSignal: CompositeSignal): List<Incident>
 
     fun tearDown()
 }

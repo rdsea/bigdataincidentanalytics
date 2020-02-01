@@ -11,7 +11,7 @@ import java.time.LocalDateTime
  * @version 1.0.0
  * @since 1.0.0
  */
-data class SignalNode(
+data class Signal(
     var name: String = "",
     var threshold: Int? = null,
     var thresholdCounter: Int? = null,

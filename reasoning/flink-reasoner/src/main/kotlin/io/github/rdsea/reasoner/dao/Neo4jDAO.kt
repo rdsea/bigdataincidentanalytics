@@ -2,7 +2,8 @@ package io.github.rdsea.reasoner.dao
 
 import io.github.rdsea.reasoner.Main
 import io.github.rdsea.reasoner.domain.CompositeSignal
-import io.github.rdsea.reasoner.domain.SignalNode
+import io.github.rdsea.reasoner.domain.Incident
+import io.github.rdsea.reasoner.domain.Signal
 import java.io.Serializable
 import java.util.Optional
 import org.neo4j.driver.Driver
@@ -33,7 +34,7 @@ class Neo4jDAO : DAO, Serializable {
         log = LoggerFactory.getLogger(Neo4jDAO::class.java)
     }
 
-    override fun readSignalByName(signalName: String): Optional<SignalNode> {
+    override fun readSignalByName(signalName: String): Optional<Signal> {
         driver.session().use { session ->
             val result: Result = session.run(READ_SIGNAL_QUERY, parameters("param", signalName))
             if (result.hasNext()) {
@@ -44,7 +45,7 @@ class Neo4jDAO : DAO, Serializable {
         }
     }
 
-    override fun updateSignal(signal: SignalNode) {
+    override fun updateSignal(signal: Signal) {
         driver.session().use { session ->
             session.writeTransaction { tx ->
                 tx.run(
@@ -82,6 +83,21 @@ class Neo4jDAO : DAO, Serializable {
         }
     }
 
+    override fun readIncidentsAndSignalsOfCompositeSignal(compositeSignal: CompositeSignal): List<Incident> {
+        driver.session().use { session ->
+            val result: Result = session.run(INCIDENTS_AND_SIGNALS_QUERY, parameters("name", compositeSignal.name))
+            val incidents = mutableListOf<Incident>()
+            while (result.hasNext()) {
+                val record: Record = result.next()
+                val incidentNode = record["incident"].asNode()
+                val signalsNodeList = record["collect(sig)"].asList { it.asNode() }
+                val signalsList = signalsNodeList.map { parseNeoNode(it) }
+                incidents.add(Incident(incidentNode.get("name").asString(), compositeSignal.lastSignalTime!!, compositeSignal, signalsList))
+            }
+            return incidents
+        }
+    }
+
     override fun tearDown() {
         driver.close()
     }
@@ -98,11 +114,11 @@ class Neo4jDAO : DAO, Serializable {
         )
     }
 
-    private fun parseNeoNode(node: Node): SignalNode {
+    private fun parseNeoNode(node: Node): Signal {
         val threshold: Int? = getIntValueOrNull(node, "threshold")
         val thresholdCounter: Int? = getIntValueOrNull(node, "thresholdCounter")
         val coolDownSec: Int? = getIntValueOrNull(node, "coolDownSec")
-        return SignalNode(
+        return Signal(
             node["name"].asString(), threshold, thresholdCounter,
             node["lastSignalTime"].asLocalDateTime(null), coolDownSec
         )
@@ -129,5 +145,10 @@ class Neo4jDAO : DAO, Serializable {
         private const val UPDATE_COMP_SIGNAL_QUERY = "MATCH (s:CompositeSignal {name:\$x}) " +
             "SET s.lastSignalTime = \$y " +
             "SET s.activeSignals = \$z"
+        private const val INCIDENTS_AND_SIGNALS_QUERY = "MATCH (cs:CompositeSignal {name:\$name})\n" +
+            "MATCH (cs)-[:INDICATES]->(incident:Incident)\n" +
+            "UNWIND cs.activeSignals as s\n" +
+            "MATCH (sig:Signal {name:s})\n" +
+            "RETURN incident,collect(sig)"
     }
 }

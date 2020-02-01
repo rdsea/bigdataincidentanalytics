@@ -2,7 +2,9 @@ package io.github.rdsea.reasoner
 
 import io.github.rdsea.reasoner.dao.Neo4jDAO
 import io.github.rdsea.reasoner.process.SignalProcessFunction
+import io.github.rdsea.reasoner.sink.ElasticSearchSinkFactory
 import io.github.rdsea.reasoner.source.KafkaRecordMapFunction
+import java.net.URI
 import java.util.Properties
 import org.apache.flink.api.common.serialization.SimpleStringSchema
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment
@@ -36,7 +38,7 @@ class Main {
                 .name("KafkaSource")
                 .map(KafkaRecordMapFunction()).name("KafkaRecordMapFunction")
                 .process(SignalProcessFunction(Neo4jDAO())).name("SignalReasoningProcessFunction")
-                .print()
+                .addSink(ElasticSearchSinkFactory.create(URI(args[3]))).name("ElasticSearchSink")
 
             env.execute("Incident Reasoning")
         }
@@ -46,8 +48,8 @@ class Main {
         }
 
         private fun checkArgs(args: Array<String>) {
-            if (args.size != 6) {
-                throw IllegalArgumentException("There must be exactly 6 arguments: <BROKERS> <GROUP_ID> <TOPIC> <NEO4J_URI> <NEO4J_USER> <NEO4J_PASS>")
+            if (args.size != 4) {
+                throw IllegalArgumentException("There must be exactly 4 arguments: <BROKERS> <GROUP_ID> <TOPIC> <ELASTICSEARCH_URI>")
             }
         }
 

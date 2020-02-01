@@ -1,7 +1,7 @@
 package io.github.rdsea.reasoner.process
 
 import io.github.rdsea.reasoner.dao.DAO
-import io.github.rdsea.reasoner.domain.IncidentReport
+import io.github.rdsea.reasoner.domain.Incident
 import java.lang.IllegalArgumentException
 import java.time.Duration
 import java.time.ZoneId
@@ -22,7 +22,7 @@ import org.slf4j.LoggerFactory
  * @version 1.0.0
  * @since 1.0.0
  */
-class SignalProcessFunction(private val dao: DAO) : ProcessFunction<Map<String, Any>, IncidentReport>() {
+class SignalProcessFunction(private val dao: DAO) : ProcessFunction<Map<String, Any>, Incident>() {
 
     private lateinit var log: Logger
     private lateinit var formatter: DateTimeFormatter
@@ -39,7 +39,7 @@ class SignalProcessFunction(private val dao: DAO) : ProcessFunction<Map<String, 
         dao.tearDown()
     }
 
-    override fun processElement(value: Map<String, Any>, ctx: Context, out: Collector<IncidentReport>) {
+    override fun processElement(value: Map<String, Any>, ctx: Context, out: Collector<Incident>) {
         log.info("Signal Map: $value")
         val signalName = value["tag"].toString().substringAfterLast(".")
         val optional = dao.readSignalByName(signalName)
@@ -88,7 +88,7 @@ class SignalProcessFunction(private val dao: DAO) : ProcessFunction<Map<String, 
                     val activeSignals = compSig.activeSignals!!.toList()
                     if (activeSignals.size / compSig.numOfConnectedSignals >= compSig.activationThreshold) {
                         log.info("Reporting incident stemming from CompositeSignal \"${compSig.name}\"")
-                        out.collect(IncidentReport("This is a test incident report"))
+                        dao.readIncidentsAndSignalsOfCompositeSignal(compSig).forEach { out.collect(it) }
                     } else {
                         log.info("Not reporting incident because ${activeSignals.size}/${compSig.numOfConnectedSignals} < ${compSig.activationThreshold}")
                     }
