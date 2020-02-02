@@ -1,8 +1,8 @@
 {
   "name": "ingestion-service",
   "version": "0.0.1",
-  "description": "",
-  "author": "",
+  "description": "Nestjs application for forwarding Prometheus alerts to a Kafka broker and manipulating the incident knowledge base",
+  "author": "Daniel Fuevesi <daniel.fuevesi@icloud.com>",
   "license": "MIT",
   "scripts": {
     "prebuild": "rimraf dist",
@@ -22,7 +22,10 @@
   "dependencies": {
     "@nestjs/common": "^6.10.14",
     "@nestjs/core": "^6.10.14",
+    "@nestjs/microservices": "^6.11.5",
     "@nestjs/platform-express": "^6.10.14",
+    "@nestjs/platform-fastify": "^6.11.5",
+    "kafkajs": "^1.12.0",
     "reflect-metadata": "^0.1.13",
     "rimraf": "^3.0.0",
     "rxjs": "^6.5.4"

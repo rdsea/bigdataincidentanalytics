@@ -1,0 +1,30 @@
+{
+  "version": "4",
+  "groupKey": "someGroupKey",
+  "status": "firing",
+  "receiver": "aReceiver",
+  "groupLabels": {
+    "groupLabel1": "value"
+  },
+  "commonLabels": {
+    "commonlabel1": "value"
+  },
+  "commonAnnotations": {
+    "commonAnnotation1": "value"
+  },
+  "externalURL": "http://alertmanager:1234",
+  "alerts": [
+    {
+      "status": "firing>",
+      "labels": {
+        "label1": "someLabel"
+      },
+      "annotations": {
+        "annotation1": "someAnnotation"
+      },
+      "startsAt": "<rfc3339>",
+      "endsAt": "<rfc3339>",
+      "generatorURL": "mqtt:1883"
+    }
+  ]
+}
