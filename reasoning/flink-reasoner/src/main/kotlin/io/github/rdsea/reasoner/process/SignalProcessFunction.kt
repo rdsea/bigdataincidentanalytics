@@ -2,11 +2,10 @@ package io.github.rdsea.reasoner.process
 
 import io.github.rdsea.reasoner.dao.DAO
 import io.github.rdsea.reasoner.domain.Incident
+import io.github.rdsea.reasoner.util.LocalDateTimeJsonSerializer.Companion.formatter
 import java.lang.IllegalArgumentException
 import java.time.Duration
-import java.time.ZoneId
 import java.time.ZonedDateTime
-import java.time.format.DateTimeFormatter
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.streaming.api.functions.ProcessFunction
 import org.apache.flink.util.Collector
@@ -25,13 +24,11 @@ import org.slf4j.LoggerFactory
 class SignalProcessFunction(private val dao: DAO) : ProcessFunction<Map<String, Any>, Incident>() {
 
     private lateinit var log: Logger
-    private lateinit var formatter: DateTimeFormatter
 
     override fun open(parameters: Configuration?) {
         super.open(parameters)
         dao.initialize()
         log = LoggerFactory.getLogger(SignalProcessFunction::class.java)
-        formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'").withZone(ZoneId.systemDefault())
     }
 
     override fun close() {
