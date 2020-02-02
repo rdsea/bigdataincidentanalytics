@@ -11,6 +11,7 @@ services:
     volumes:
       - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
       - ./monitoring/prometheus/targets.json:/etc/prometheus/targets.json
+      - ./monitoring/prometheus/rules/:/etc/prometheus/rules/
     networks:
       - iot-big-data
 
@@ -23,20 +24,17 @@ services:
     networks:
       - iot-big-data
 
-  # CONTAINER ADVISOR
-  cadvisor:
-    image: google/cadvisor:latest
-    container_name: cadvisor
+  alertmanager:
+    image: prom/alertmanager
+    container_name: alertmanager
     ports:
-      - 8082:8080
+      - 9093:9093
+    volumes:
+      - ./monitoring/prometheus/alertmanager.yml:/alertmanager.yml
+    command:
+      - '--config.file=/alertmanager.yml'
     networks:
       - iot-big-data
-    volumes:
-      - /:/rootfs:ro
-      - /var/run:/var/run:rw
-      - /sys:/sys:ro
-      - /var/lib/docker/:/var/lib/docker:ro
-      - /dev/disk/:/dev/disk:ro
 
   # MOSQUITTO PROMETHEUS EXPORTER
   mqtt_exporter:
@@ -58,6 +56,8 @@ services:
     networks:
       - iot-big-data
     command: -namenode.jmx.url "http://namenode:50070/jmx"
+    expose:
+      - 9070
 
   # HADOOP RESOURCEMANAGER PROMETHEUS EXPORTER
   resourcemanager_exporter:
@@ -66,6 +66,8 @@ services:
     networks:
       - iot-big-data
     command: -resourcemanager.url "http://resourcemanager:8088"
+    expose:
+      - 9088
 
   # ELASTICSEARCH PROMETHEUS EXPORTER
   elasticsearch_exporter:
@@ -73,8 +75,8 @@ services:
     container_name: elasticsearch-exporter
     command: -es.uri=http://elasticsearch:9200
     restart: always
-    ports:
-      - 9108:9108
+    expose:
+      - 9108
     networks:
       - iot-big-data
 
@@ -92,17 +94,17 @@ services:
     volumes:
       - ./monitoring/grafana/provisioning/:/etc/grafana/provisioning/
 
-  # BRIDGE TO BRING SPARK METRICS INTO PROMETHEUS
+  # BRIDGE TO BRING SPARK JVM METRICS INTO PROMETHEUS
   graphite_exporter:
     image: prom/graphite-exporter
     command: "--graphite.mapping-config=/tmp/graphite_mapping.conf"
     container_name: graphite_exporter
     volumes:
       - ./monitoring/prometheus/graphite_mapping.conf:/tmp/graphite_mapping.conf
-    ports:
-      - 9108:9108
-      - 9109:9109
-      - 9109:9109/udp
+    expose:
+      - 9108
+      - 9109
+      - 9109/udp
     networks:
       - iot-big-data
 

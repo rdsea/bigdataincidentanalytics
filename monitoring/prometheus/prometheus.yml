@@ -1,24 +1,21 @@
 global:
-  scrape_interval:     15s
-  evaluation_interval: 15s
+  scrape_interval:     10s
+  evaluation_interval: 10s
 
 rule_files:
-# - "first.rules"
-# - "second.rules"
+  - "./rules/mqtt.yml"
 
+# The targets are moved to a separate 'targets.json' file on purpose.
+# With file_sd_configs Prometheus can watch the file for changes, this means we can
+# dynamically update the targets without needing to restart Prometheus.
 scrape_configs:
   - job_name: 'dummy'  # This is a default value, it is mandatory.
     file_sd_configs:
       - files:
         - targets.json
         refresh_interval: 1m
-#
-#  - job_name: 'elasticsearch'
-#    static_configs:
-#      - targets: ['elasticsearch-exporter:9108']
-#
-#  - job_name: 'cadvisor'
-#    scrape_interval: 5s
-#    static_configs:
-#      - targets:
-#          - cadvisor:8080
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ['alertmanager:9093']

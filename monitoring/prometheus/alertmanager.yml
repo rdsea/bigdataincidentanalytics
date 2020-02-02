@@ -1,0 +1,27 @@
+# There are a lot more options can be configured.
+# Please refer to https://prometheus.io/docs/alerting/configuration/#configuration-file
+
+# The root node of the routing tree.
+route:
+  receiver: ingestion-service
+
+# Inhibition rules allow to mute a set of alerts given that another alert is
+# firing.
+# We use this to mute any warning-level notifications if the same alert is
+# already critical.
+inhibit_rules:
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    # Apply inhibition if the alertname is the same.
+    equal: ['alertname', 'cluster', 'service']
+
+
+# A list of notification receivers.
+receivers:
+  - name: 'ingestion-service'
+    webhook_configs:
+      - send_resolved: false
+        url: http://host.docker.internal:3000/alerts  # TODO don't forget to change host to container name
+
