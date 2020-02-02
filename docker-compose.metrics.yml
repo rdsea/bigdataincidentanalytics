@@ -24,6 +24,7 @@ services:
     networks:
       - iot-big-data
 
+  # PROMETHEUS ALERT MANAGER
   alertmanager:
     image: prom/alertmanager
     container_name: alertmanager
@@ -80,20 +81,6 @@ services:
     networks:
       - iot-big-data
 
-  # GRAFANA FOR DISPLAYING METRICS
-  grafana:
-    image: grafana/grafana:6.4.0
-    container_name: grafana
-    restart: always
-    ports:
-      - 3000:3000
-    networks:
-      - iot-big-data
-    environment:
-      - GF_SECURITY_ADMIN_PASSWORD=password
-    volumes:
-      - ./monitoring/grafana/provisioning/:/etc/grafana/provisioning/
-
   # BRIDGE TO BRING SPARK JVM METRICS INTO PROMETHEUS
   graphite_exporter:
     image: prom/graphite-exporter
@@ -107,6 +94,20 @@ services:
       - 9109/udp
     networks:
       - iot-big-data
+
+  # OPTIONAL: GRAFANA FOR VISUALIZING PROMETHEUS METRICS WITH DASHBOARDS
+  grafana:
+    image: grafana/grafana:6.4.0
+    container_name: grafana
+    restart: always
+    ports:
+      - 3000:3000
+    networks:
+      - iot-big-data
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=password
+    volumes:
+      - ./monitoring/grafana/provisioning/:/etc/grafana/provisioning/
 
 networks:
   iot-big-data:

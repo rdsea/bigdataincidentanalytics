@@ -2,7 +2,7 @@ version: '3.4'
 
 services:
 
-  ##### ELASTICSEARCH FOR STORING LOGS, METRICS #####
+  ##### ELASTICSEARCH FOR STORING LOGS, INCIDENT REPORTS #####
   elasticsearch:
     build:
       context: pipeline/elk/elasticsearch/
@@ -39,27 +39,8 @@ services:
     depends_on:
       - elasticsearch
 
-  ##### METRICBEAT FOR CENTRALIZING METRICS (PROMETHEUS, DOCKER, K8S) IN ELASTICSEARCH #####
-  metricbeat:
-    build:
-      context: pipeline/elk/metricbeat/
-      args:
-        ELK_VERSION: $ELK_VERSION
-    container_name: metricbeat
-    user: root
-    volumes:
-      - ./pipeline/elk/metricbeat/config/metricbeat.docker.yml:/usr/share/metricbeat/metricbeat.yml:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - /sys/fs/cgroup:/hostfs/sys/fs/cgroup:ro
-      - /proc:/hostfs/proc:ro
-      - /:/hostfs:ro
-      - $ETC_LOCALTIME:/etc/localtime:ro
-    networks:
-      - iot-big-data
-    depends_on:
-      - elasticsearch
 
-  ##### FLUENTD FOR CENTRALIZING LOGS #####
+  ##### FLUENTD FOR CENTRALIZING LOGS AND SIGNALS #####
   fluentd:
     build: logging/fluentd
     #image: fluentd:gcp_onpremise # use this image if you want to forward logs into Google Stackdriver
@@ -81,6 +62,7 @@ services:
       - 24224:24224/udp
       - 9880:9880
 
+  ##### NEO4J GRAPH DATABASE AS KNOWLEDGE BASE FOR INCIDENT REASONING #####
   neo4j:
     #image: neo4j/neo4j-experimental:4.0.0-rc01
     image: neo4j:3.5.14
@@ -100,6 +82,7 @@ services:
       - 7474:7474
       - 7687:7687
 
+  ##### ZOOKEEPER FOR RUNNING KAFKA CLUSTER #####
   zookeeper:
     image: wurstmeister/zookeeper
     container_name: zookeeper
@@ -109,6 +92,7 @@ services:
     ports:
       - 2181:2181
 
+  ##### KAFKA FOR CENTRALIZED, RELIABLE, EXACTLY-ONCE-STREAMING OF SIGNALS #####
   kafka:
     image: wurstmeister/kafka:2.12-2.3.0
     container_name: kafka
@@ -129,20 +113,7 @@ services:
     ports:
       - 9092:9092
 
-  kafdrop:
-    image: obsidiandynamics/kafdrop
-    container_name: kafdrop
-    restart: "no"
-    ports:
-      - 9000:9000
-    environment:
-      KAFKA_BROKERCONNECT: "kafka:29092"
-      JVM_OPTS: "-Xms32M -Xmx64M"
-    networks:
-      - iot-big-data
-    depends_on:
-      - kafka
-
+  ##### BRIDGE BETWEEN PROMETHEUS ALERTS AND THE KAFKA CLUSTER #####
   ingestion-service:
     image: ingestion-service:latest
     container_name: ingestion-service
@@ -156,6 +127,22 @@ services:
       NEO4J_PASSWORD: test
     networks:
       - iot-big-data
+
+  ##### OPTIONAL: WEB APPLICATION FOR LOOKING AT KAFKA BROKERS AND RECORDS #####
+  ##### USE THIS IF YOU WANT TO DEBUG YOUR KAFKA TOPICS #####
+  kafdrop:
+    image: obsidiandynamics/kafdrop
+    container_name: kafdrop
+    restart: "no"
+    ports:
+      - 9000:9000
+    environment:
+      KAFKA_BROKERCONNECT: "kafka:29092"
+      JVM_OPTS: "-Xms32M -Xmx64M"
+    networks:
+      - iot-big-data
+    depends_on:
+      - kafka
 
 networks:
   iot-big-data:
