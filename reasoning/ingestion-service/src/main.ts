@@ -4,7 +4,7 @@ import {FastifyAdapter, NestFastifyApplication} from "@nestjs/platform-fastify";
 import {Transport} from "@nestjs/microservices";
 import {KAFKA_BROKERS} from "./global/globals";
 
-async function bootstrap() {
+async function bootstrap(): Promise<void> {
     const app = await NestFactory.create<NestFastifyApplication>(
         AppModule,
         new FastifyAdapter({logger: true})

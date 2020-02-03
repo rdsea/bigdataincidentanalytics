@@ -1,6 +1,6 @@
 import {Body, Controller, Post} from '@nestjs/common';
 import {AlertsService} from "./alerts.service";
-import {PrometheusAlertGroupDto} from "./dto/prometheus-alert-group-dto";
+import {PrometheusAlertGroup} from "./dto/prometheus-alert-group";
 
 @Controller('alerts')
 export class AlertsController {
@@ -8,7 +8,7 @@ export class AlertsController {
     }
 
     @Post()
-    async create(@Body() promGroupAlerts: PrometheusAlertGroupDto) {
+    async create(@Body() promGroupAlerts: PrometheusAlertGroup): Promise<void> {
         await this.alertsService.create(promGroupAlerts)
     }
 }

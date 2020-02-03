@@ -1,7 +1,7 @@
-import {PrometheusAlertDto} from "./prometheus-alert-dto";
+import {PrometheusAlert} from "./prometheus-alert";
 // This schema is specified by Prometheus Webhook config.
 // See https://prometheus.io/docs/alerting/configuration/#webhook_config
-export class PrometheusAlertGroupDto {
+export class PrometheusAlertGroup {
     readonly version: string;
     readonly groupKey: string;
     readonly status: string;
@@ -10,5 +10,5 @@ export class PrometheusAlertGroupDto {
     readonly commonLabels: object;
     readonly commonAnnotations: object;
     readonly externalURL: string;
-    readonly alerts: [PrometheusAlertDto]
+    readonly alerts: [PrometheusAlert]
 }

@@ -3,10 +3,9 @@ import {AlertsController} from './alerts.controller';
 import {AlertsService} from './alerts.service';
 import {ClientsModule, Transport} from "@nestjs/microservices";
 import {KAFKA_BROKERS} from "../global/globals";
+import { AlertTransformerService } from './alert-transformer/alert-transformer.service';
 
 @Module({
-  controllers: [AlertsController],
-  providers: [AlertsService],
   imports: [
     ClientsModule.register([
       {
@@ -21,7 +20,9 @@ import {KAFKA_BROKERS} from "../global/globals";
         }
       }
     ])
-  ]
+  ],
+  controllers: [AlertsController],
+  providers: [AlertsService, AlertTransformerService]
 })
 export class AlertsModule {
 }

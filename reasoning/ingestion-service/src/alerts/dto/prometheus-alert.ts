@@ -1,4 +1,4 @@
-export class PrometheusAlertDto {
+export class PrometheusAlert {
     readonly status: string;
     readonly labels: object;
     readonly annotations: object;
