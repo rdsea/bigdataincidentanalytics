@@ -1,3 +1,5 @@
 node_modules
 dist
 npm-debug.log
+Prometheus_Alert_Sample.json
+README.md
