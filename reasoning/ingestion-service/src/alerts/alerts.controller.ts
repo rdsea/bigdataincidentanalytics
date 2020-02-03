@@ -9,6 +9,10 @@ export class AlertsController {
 
     @Post()
     async create(@Body() promGroupAlerts: PrometheusAlertGroup): Promise<void> {
-        await this.alertsService.create(promGroupAlerts)
+        try {
+            await this.alertsService.create(promGroupAlerts)
+        } catch (e) {
+            console.error("Could not forward alert. Reason:" + e);
+        }
     }
 }

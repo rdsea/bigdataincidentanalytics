@@ -7,6 +7,6 @@ export class AlertTransformerService {
     private signalType = "PROMETHEUS_ALERT";
 
     async transform(original: PrometheusAlertDto): Promise<TransformedPrometheusAlert> {
-        return Promise.resolve(new TransformedPrometheusAlert(original, this.signalType));
+        return new Promise(resolve => resolve(new TransformedPrometheusAlert(original, this.signalType)));
     }
 }

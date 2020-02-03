@@ -13,11 +13,18 @@ export class AlertsService {
     }
 
     async create(alertGroup: PrometheusAlertGroup): Promise<boolean> {
-        alertGroup.alerts.forEach((alert) => {
-            this.alertTransformer.transform(alert).then((ingestedAlert) => {
-                this.kafkaClient.emit(KAFKA_TOPIC, JSON.stringify(ingestedAlert));
+        return Promise.all(
+            alertGroup.alerts.map(
+                (originalAlert) => {
+                    this.alertTransformer.transform(originalAlert).then((transformedAlert) => {
+                        this.kafkaClient.emit(KAFKA_TOPIC, JSON.stringify(transformedAlert)).toPromise()
+                    })
+                })
+        )
+            .then(() => true)
+            .catch(error => {
+                console.error(error);
+                return false;
             });
-        });
-        return Promise.resolve(true);
     }
 }

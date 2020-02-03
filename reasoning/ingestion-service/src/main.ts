@@ -23,4 +23,4 @@ async function bootstrap(): Promise<void> {
     await app.listen(3000, '0.0.0.0');
 }
 
-bootstrap().then();
+bootstrap().then().catch(e => console.error(e));

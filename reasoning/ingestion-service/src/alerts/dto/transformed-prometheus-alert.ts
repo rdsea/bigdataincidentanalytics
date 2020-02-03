@@ -10,6 +10,7 @@ export class TransformedPrometheusAlert {
     readonly generatorURL: string;
 
     constructor(originalPromAlert: PrometheusAlert, signalType: string) {
+        // eslint-disable-next-line @typescript-eslint/camelcase
         this.signal_type = signalType;
         this.status = originalPromAlert.status;
         this.labels = originalPromAlert.labels;
