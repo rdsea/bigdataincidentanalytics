@@ -23,5 +23,9 @@ receivers:
   - name: 'ingestion-service'
     webhook_configs:
       - send_resolved: false
-        url: http://host.docker.internal:3000/alerts  # TODO don't forget to change host to container name
+        url: http://ingestion-service:3000/alerts
+        # If the ingestion-service is NOT running as a Docker container, but simply on your host machine,
+        # then on macOS the host.docker.internal address routes the communication from inside a container
+        # towards the host machine.
+        # url: http://host.docker.internal:3000/alerts
 

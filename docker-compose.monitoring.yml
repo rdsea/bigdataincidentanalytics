@@ -117,8 +117,8 @@ services:
   ingestion-service:
     image: ingestion-service:latest
     container_name: ingestion-service
-    ports:
-      - 3000:3000
+    expose:
+      - 3000
     environment:
       KAFKA_BROKERS: "kafka:29092"  # separate multiple brokers by a comma e.g "kafka1:29092,kafka2:29092"
       KAFKA_TOPIC: signals
