@@ -279,3 +279,4 @@ hs_err_pid*
 /reasoning/database/data/
 /reasoning/ingestion-service/package-lock.json
 /reasoning/ingestion-service/node_modules/
+/reasoning/cassandra/data/

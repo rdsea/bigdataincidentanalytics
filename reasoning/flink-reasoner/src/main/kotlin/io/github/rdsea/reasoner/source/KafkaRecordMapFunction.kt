@@ -1,8 +1,18 @@
 package io.github.rdsea.reasoner.source
 
 import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
-import org.apache.flink.api.common.functions.MapFunction
+import com.google.gson.JsonElement
+import com.google.gson.JsonObject
+import io.github.rdsea.reasoner.Main
+import io.github.rdsea.reasoner.domain.Signal
+import io.github.rdsea.reasoner.domain.SignalType
+import io.github.rdsea.reasoner.util.LocalDateTimeJsonSerializer
+import java.lang.IllegalArgumentException
+import java.time.LocalDateTime
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import org.apache.flink.api.common.functions.RichMapFunction
+import org.apache.flink.configuration.Configuration
 
 /**
  * <h4>About this class</h4>
@@ -13,14 +23,65 @@ import org.apache.flink.api.common.functions.MapFunction
  * @version 1.0.0
  * @since 1.0.0
  */
-class KafkaRecordMapFunction : MapFunction<String, Map<String, Any>> {
+class KafkaRecordMapFunction : RichMapFunction<String, Signal>() {
 
-    override fun map(value: String): Map<String, Any> {
-        return gson.fromJson(value, typeToken)
+    private lateinit var gson: Gson
+    private lateinit var prometheusFormatter: DateTimeFormatter
+
+    override fun open(parameters: Configuration?) {
+        super.open(parameters)
+        gson = Main.gson
+        prometheusFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSSSSS'Z'")
+            .withZone(ZoneId.systemDefault())
     }
 
-    companion object {
-        private val typeToken = object : TypeToken<Map<String, Any>>() {}.type
-        private val gson = Gson()
+    override fun map(value: String): Signal {
+        val json: JsonObject = gson.fromJson(value, JsonElement::class.java).asJsonObject
+        if (!json.has("signal_type")) {
+            throw IllegalArgumentException("\"Kafka record doesn't contain required field \\\"signal_type\\\"!\"")
+        }
+        return when (val signalType = json["signal_type"].asString) {
+            SignalType.LOG.name -> parseLogSignal(json)
+            SignalType.PROMETHEUS_ALERT.name -> parsePrometheusSignal(json)
+            else -> throw IllegalArgumentException("Unsupported signal type \"$signalType\" in Kafka record")
+        }
+    }
+
+    private fun parseLogSignal(jsonObject: JsonObject): Signal {
+        val result = Signal(
+            type = SignalType.LOG,
+            name = jsonObject["tag"].asString.substringAfterLast("."),
+            timestamp = LocalDateTime.parse(jsonObject["event_time"].asString, LocalDateTimeJsonSerializer.formatter),
+            pipelineComponent = jsonObject["pipeline_component"].asString,
+            summary = jsonObject["message"].asString
+        )
+        val details = gson.fromJson<Map<String, Any>>(jsonObject, Main.genericMapType).toMutableMap()
+        details.remove("signal_type")
+        details.remove("tag")
+        details.remove("event_time")
+        details.remove("pipeline_component")
+        details.remove("message")
+        result.details = details
+        return result
+    }
+
+    private fun parsePrometheusSignal(jsonObject: JsonObject): Signal {
+        val labels = jsonObject["labels"].asJsonObject
+        val annotations = jsonObject["annotations"].asJsonObject
+        val result = Signal(
+            type = SignalType.PROMETHEUS_ALERT,
+            name = labels["alertname"].asString,
+            timestamp = LocalDateTime.parse(jsonObject["startsAt"].asString, prometheusFormatter),
+            pipelineComponent = labels["pipeline_component"].asString,
+            summary = annotations["summary"].asString
+        )
+        labels.remove("alertname")
+        labels.remove("pipeline_component")
+        annotations.remove("summary")
+        result.details = mapOf(
+            "labels" to gson.fromJson<Map<String, Any>>(labels, Main.genericMapType),
+            "annotations" to gson.fromJson<Map<String, Any>>(annotations, Main.genericMapType)
+        )
+        return result
     }
 }

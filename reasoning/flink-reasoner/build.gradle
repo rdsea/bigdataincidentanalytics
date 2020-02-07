@@ -27,8 +27,8 @@ dependencies {
     implementation "org.apache.flink:flink-java:1.9.1"
     implementation "org.apache.flink:flink-streaming-java_2.12:1.9.1"
     implementation "org.apache.flink:flink-connector-elasticsearch6_2.11:1.9.1"
-    implementation "org.apache.flink:flink-cep_2.12:1.9.1"
     implementation "org.apache.flink:flink-connector-kafka_2.12:1.9.1"
+    implementation "org.apache.flink:flink-connector-cassandra_2.12:1.9.1"
     implementation 'com.google.code.gson:gson:2.8.6'
     implementation 'org.neo4j.driver:neo4j-java-driver:4.0.0'
 }

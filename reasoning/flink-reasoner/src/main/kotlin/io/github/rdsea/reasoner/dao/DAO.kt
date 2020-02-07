@@ -18,15 +18,15 @@ interface DAO {
 
     fun initialize()
 
-    fun readSignalByName(signalName: String): Optional<Signal>
+    fun findSignal(signal: Signal): Optional<Signal>
 
     fun updateSignal(signal: Signal)
 
-    fun readCompositeSignalsOfSignalByName(signalName: String): List<CompositeSignal>
+    fun findCompositeSignalsOfSignal(signal: Signal): List<CompositeSignal>
 
     fun updateCompositeSignal(compositeSignal: CompositeSignal)
 
-    fun readIncidentsAndSignalsOfCompositeSignal(compositeSignal: CompositeSignal): List<Incident>
+    fun findIncidentsOfCompositeSignal(compositeSignal: CompositeSignal): List<Incident>
 
     fun tearDown()
 }
