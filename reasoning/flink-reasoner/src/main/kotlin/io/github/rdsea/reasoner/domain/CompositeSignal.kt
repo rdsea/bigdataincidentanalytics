@@ -1,7 +1,5 @@
 package io.github.rdsea.reasoner.domain
 
-import java.time.LocalDateTime
-
 /**
  * <h4>About this class</h4>
  *
@@ -16,6 +14,5 @@ data class CompositeSignal(
     var coolDownSec: Int = 3600, // set default to 1 hour
     var activationThreshold: Double = 1.0,
     var numOfConnectedSignals: Int = 1,
-    var lastSignalTime: LocalDateTime? = null,
-    var activeSignals: MutableList<String>? = null
+    var activeSignals: List<Signal> = emptyList()
 )

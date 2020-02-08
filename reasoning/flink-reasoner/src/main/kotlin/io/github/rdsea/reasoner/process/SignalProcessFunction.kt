@@ -1,10 +1,9 @@
 package io.github.rdsea.reasoner.process
 
 import io.github.rdsea.reasoner.dao.DAO
-import io.github.rdsea.reasoner.domain.Incident
+import io.github.rdsea.reasoner.domain.CompositeSignal
 import io.github.rdsea.reasoner.domain.Signal
 import java.lang.IllegalArgumentException
-import java.time.Duration
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.streaming.api.functions.ProcessFunction
 import org.apache.flink.util.Collector
@@ -21,7 +20,7 @@ import org.slf4j.LoggerFactory
  * @version 1.0.0
  * @since 1.0.0
  */
-class SignalProcessFunction(private val dao: DAO) : ProcessFunction<Signal, Incident>() {
+class SignalProcessFunction(private val dao: DAO) : ProcessFunction<Signal, CompositeSignal>() {
 
     private lateinit var log: Logger
     private lateinit var sideOutputTag: OutputTag<Signal>
@@ -33,12 +32,7 @@ class SignalProcessFunction(private val dao: DAO) : ProcessFunction<Signal, Inci
         sideOutputTag = object : OutputTag<Signal>("side-output") {}
     }
 
-    override fun close() {
-        super.close()
-        dao.tearDown()
-    }
-
-    override fun processElement(value: Signal, ctx: Context, out: Collector<Incident>) {
+    override fun processElement(value: Signal, ctx: Context, out: Collector<CompositeSignal>) {
         val optional = dao.findSignal(value)
         val signalNode = if (optional.isPresent) {
             optional.get()
@@ -48,27 +42,23 @@ class SignalProcessFunction(private val dao: DAO) : ProcessFunction<Signal, Inci
         }
         log.info("Signal Node: $signalNode")
         val incomingSignalTime = signalNode.timestamp
-        var needToContinue = true
-        if (signalNode.threshold > 0 && signalNode.coolDownSec > 0) {
-            if (signalNode.lastSignalTime != null && Duration.between(
-                signalNode.lastSignalTime,
-                incomingSignalTime
-            ).seconds >= signalNode.coolDownSec || signalNode.thresholdCounter < 0
-            ) {
-                signalNode.thresholdCounter = 1
-            } else {
+        if (signalNode.requiresMultipleOccurrences()) {
+            if (signalNode.isWithinCoolDownWindow() && signalNode.isCounterInitialized()) {
                 signalNode.thresholdCounter = signalNode.thresholdCounter + 1
+            } else {
+                signalNode.thresholdCounter = 1
             }
             signalNode.lastSignalTime = incomingSignalTime
-            if (signalNode.thresholdCounter < signalNode.threshold) {
+            /*if (signalNode.thresholdCounter < signalNode.threshold) {
                 needToContinue = false
                 log.info("Signal ${signalNode.name} is at ${signalNode.thresholdCounter} occurrences. Will fire at ${signalNode.threshold}")
             } else {
                 log.info("Signal ${signalNode.name} reached the required number of occurrences.")
-            }
+            }*/
         }
-        dao.updateSignal(signalNode)
-        if (needToContinue) {
+        val potentiallyActivatedCompositeSignals = dao.updateSignalAndGetActivatedCompositeSignals(signalNode)
+        potentiallyActivatedCompositeSignals.forEach { out.collect(it) }
+        /*if (signalNode.isActivated()) {
             val compositeSignals = dao.findCompositeSignalsOfSignal(signalNode)
             if (compositeSignals.isNotEmpty()) {
                 val signalKey = "${signalNode.name}_${signalNode.pipelineComponent}"
@@ -95,7 +85,12 @@ class SignalProcessFunction(private val dao: DAO) : ProcessFunction<Signal, Inci
             } else {
                 log.error("There are no composite signals associated with signal ${signalNode.name}.")
             }
-        }
+        }*/
         ctx.output(sideOutputTag, signalNode)
+    }
+
+    override fun close() {
+        super.close()
+        dao.tearDown()
     }
 }

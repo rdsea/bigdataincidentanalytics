@@ -15,10 +15,10 @@ import java.time.LocalDateTime
 data class Incident(
     var name: String,
     var dateTime: LocalDateTime,
-    var compositeSignal: CompositeSignal,
-    var activatedSignals: List<Signal>
+    var compositeSignal: CompositeSignal
 ) : Serializable {
 
+    private val activatedSignals = compositeSignal.activeSignals
     private val summary = "Incident \"${this.name}\" is active! " +
         "It is indicated by ${this.activatedSignals.size} signal(s)."
 
@@ -26,3 +26,7 @@ data class Incident(
         private const val serialVersionUID = 20180617104402L
     }
 }
+
+data class IncidentEntity(
+    var name: String
+)
