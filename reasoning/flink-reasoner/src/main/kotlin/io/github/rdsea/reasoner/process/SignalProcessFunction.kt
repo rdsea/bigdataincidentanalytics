@@ -3,7 +3,6 @@ package io.github.rdsea.reasoner.process
 import io.github.rdsea.reasoner.dao.DAO
 import io.github.rdsea.reasoner.domain.CompositeSignal
 import io.github.rdsea.reasoner.domain.Signal
-import java.lang.IllegalArgumentException
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.streaming.api.functions.ProcessFunction
 import org.apache.flink.util.Collector
@@ -34,25 +33,24 @@ class SignalProcessFunction(private val dao: DAO) : ProcessFunction<Signal, Comp
 
     override fun processElement(value: Signal, ctx: Context, out: Collector<CompositeSignal>) {
         val optional = dao.findSignal(value)
-        val signalNode = if (optional.isPresent) {
-            optional.get()
-        } else {
-            log.info("Signal: $value")
-            throw IllegalArgumentException("There is no signal in the knowledge base with name \"${value.name}\" and component ${value.pipelineComponent}!")
-        }
-        log.info("Signal Node: $signalNode")
-        val incomingSignalTime = signalNode.timestamp
-        if (signalNode.requiresMultipleOccurrences()) {
-            if (signalNode.isWithinCoolDownWindow() && signalNode.isCounterInitialized()) {
-                signalNode.thresholdCounter = signalNode.thresholdCounter + 1
-            } else {
-                signalNode.thresholdCounter = 1
+        if (optional.isPresent) {
+            val signalNode = optional.get()
+            log.info("Signal Node: $signalNode")
+            val incomingSignalTime = signalNode.timestamp
+            if (signalNode.requiresMultipleOccurrences()) {
+                if (signalNode.isWithinCoolDownWindow() && signalNode.isCounterInitialized()) {
+                    signalNode.thresholdCounter = signalNode.thresholdCounter + 1
+                } else {
+                    signalNode.thresholdCounter = 1
+                }
+                signalNode.lastSignalTime = incomingSignalTime
             }
-            signalNode.lastSignalTime = incomingSignalTime
+            val potentiallyActivatedCompositeSignals = dao.updateSignalAndGetActivatedCompositeSignals(signalNode)
+            potentiallyActivatedCompositeSignals.forEach { out.collect(it) }
+            ctx.output(sideOutputTag, signalNode)
+        } else {
+            log.info("There is no signal in the knowledge base with name \"${value.name}\" and component ${value.pipelineComponent}!")
         }
-        val potentiallyActivatedCompositeSignals = dao.updateSignalAndGetActivatedCompositeSignals(signalNode)
-        potentiallyActivatedCompositeSignals.forEach { out.collect(it) }
-        ctx.output(sideOutputTag, signalNode)
     }
 
     override fun close() {

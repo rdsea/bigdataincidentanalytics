@@ -33,12 +33,8 @@ class CompositeSignalProcessFunction(private val dao: DAO) : ProcessFunction<Com
     }
 
     override fun processElement(compositeSignal: CompositeSignal, ctx: Context, out: Collector<Incident>) {
-        val sortedSignals = compositeSignal.activeSignals.sortedByDescending { it.timestamp } // TODO check sorting, most recent should be at 0
+        val sortedSignals = compositeSignal.activeSignals.sortedByDescending { it.timestamp }
         val minRequiredActiveSignals = ceil(abs(compositeSignal.activationThreshold * compositeSignal.numOfConnectedSignals)).toInt()
-        log.info(
-            "$minRequiredActiveSignals Signals within ${compositeSignal.coolDownSec}s required.\n" +
-                "Signals sorted: ${sortedSignals.map { it.timestamp }}"
-        )
         // invariant: minRequiredSignals is guaranteed to be at least 1 or at most compositeSignal.numOfConnectedSignals
         if (areSignalsWithinTimeWindow(sortedSignals[0], sortedSignals[minRequiredActiveSignals - 1], compositeSignal.coolDownSec)) {
             // at this point there will be a generated Incident report, because there are (at least) minRequiredActiveSignals
@@ -56,7 +52,7 @@ class CompositeSignalProcessFunction(private val dao: DAO) : ProcessFunction<Com
             buildIncidents(compositeSignal)
                 .forEach { out.collect(it) }
         } else {
-            log.info("Signal 0 and signal ${minRequiredActiveSignals - 1} outside time window: [${sortedSignals[0].timestamp}, ${sortedSignals[minRequiredActiveSignals - 1].timestamp}]")
+            log.debug("CS \"${compositeSignal.name}\" not fired. Signal 0 and signal ${minRequiredActiveSignals - 1} outside ${compositeSignal.coolDownSec}s time window: [${sortedSignals[0].timestamp}, ${sortedSignals[minRequiredActiveSignals - 1].timestamp}]")
         }
     }
 

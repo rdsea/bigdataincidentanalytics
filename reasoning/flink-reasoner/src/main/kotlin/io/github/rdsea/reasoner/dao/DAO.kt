@@ -22,12 +22,6 @@ interface DAO {
 
     fun updateSignalAndGetActivatedCompositeSignals(signal: Signal): List<CompositeSignal>
 
-    @Deprecated("Became obsolete")
-    fun findCompositeSignalsOfSignal(signal: Signal): List<CompositeSignal>
-
-    @Deprecated("Became obsolete")
-    fun updateCompositeSignal(compositeSignal: CompositeSignal)
-
     fun findIncidentsOfCompositeSignal(compositeSignal: CompositeSignal): List<IncidentEntity>
 
     fun tearDown()
