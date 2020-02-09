@@ -26,8 +26,9 @@ class LocalDateTimeJsonSerializer : JsonSerializer<LocalDateTime>, JsonDeseriali
         return JsonPrimitive(src.format(formatter))
     }
 
-    override fun deserialize(json: JsonElement, typeOfT: Type, context: JsonDeserializationContext): LocalDateTime {
-        return LocalDateTime.parse(json.asString, formatter)
+    override fun deserialize(json: JsonElement, typeOfT: Type, context: JsonDeserializationContext): LocalDateTime? {
+        if (json.isJsonNull) return null
+        return LocalDateTime.parse(json.asJsonPrimitive.asString, formatter)
     }
 
     companion object {

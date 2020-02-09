@@ -49,43 +49,9 @@ class SignalProcessFunction(private val dao: DAO) : ProcessFunction<Signal, Comp
                 signalNode.thresholdCounter = 1
             }
             signalNode.lastSignalTime = incomingSignalTime
-            /*if (signalNode.thresholdCounter < signalNode.threshold) {
-                needToContinue = false
-                log.info("Signal ${signalNode.name} is at ${signalNode.thresholdCounter} occurrences. Will fire at ${signalNode.threshold}")
-            } else {
-                log.info("Signal ${signalNode.name} reached the required number of occurrences.")
-            }*/
         }
         val potentiallyActivatedCompositeSignals = dao.updateSignalAndGetActivatedCompositeSignals(signalNode)
         potentiallyActivatedCompositeSignals.forEach { out.collect(it) }
-        /*if (signalNode.isActivated()) {
-            val compositeSignals = dao.findCompositeSignalsOfSignal(signalNode)
-            if (compositeSignals.isNotEmpty()) {
-                val signalKey = "${signalNode.name}_${signalNode.pipelineComponent}"
-                compositeSignals.forEach { compSig ->
-                    if (compSig.lastSignalTime != null && Duration.between(
-                        compSig.lastSignalTime,
-                        incomingSignalTime
-                    ).seconds >= compSig.coolDownSec || compSig.activeSignals == null
-                    ) {
-                        compSig.activeSignals = mutableListOf(signalKey)
-                    } else if (compSig.activeSignals != null && !compSig.activeSignals!!.contains(signalKey)) {
-                        compSig.activeSignals!!.add(signalKey)
-                    }
-                    compSig.lastSignalTime = incomingSignalTime
-                    dao.updateCompositeSignal(compSig)
-                    val activeSignals = compSig.activeSignals!!.toList()
-                    if (activeSignals.size / compSig.numOfConnectedSignals >= compSig.activationThreshold) {
-                        log.info("Reporting incident stemming from CompositeSignal \"${compSig.name}\"")
-                        dao.findIncidentsOfCompositeSignal(compSig).forEach { out.collect(it) }
-                    } else {
-                        log.info("Not reporting incident because ${activeSignals.size}/${compSig.numOfConnectedSignals} < ${compSig.activationThreshold}")
-                    }
-                }
-            } else {
-                log.error("There are no composite signals associated with signal ${signalNode.name}.")
-            }
-        }*/
         ctx.output(sideOutputTag, signalNode)
     }
 

@@ -33,9 +33,12 @@ class CompositeSignalProcessFunction(private val dao: DAO) : ProcessFunction<Com
     }
 
     override fun processElement(compositeSignal: CompositeSignal, ctx: Context, out: Collector<Incident>) {
-        val sortedSignals = compositeSignal.activeSignals.sortedBy { it.timestamp } // TODO check sorting, most recent should be at 0
-        log.info("Signals of CS sorted. ${sortedSignals.map { it.timestamp }}")
+        val sortedSignals = compositeSignal.activeSignals.sortedByDescending { it.timestamp } // TODO check sorting, most recent should be at 0
         val minRequiredActiveSignals = ceil(abs(compositeSignal.activationThreshold * compositeSignal.numOfConnectedSignals)).toInt()
+        log.info(
+            "$minRequiredActiveSignals Signals within ${compositeSignal.coolDownSec}s required.\n" +
+                "Signals sorted: ${sortedSignals.map { it.timestamp }}"
+        )
         // invariant: minRequiredSignals is guaranteed to be at least 1 or at most compositeSignal.numOfConnectedSignals
         if (areSignalsWithinTimeWindow(sortedSignals[0], sortedSignals[minRequiredActiveSignals - 1], compositeSignal.coolDownSec)) {
             // at this point there will be a generated Incident report, because there are (at least) minRequiredActiveSignals
@@ -52,37 +55,13 @@ class CompositeSignalProcessFunction(private val dao: DAO) : ProcessFunction<Com
             compositeSignal.activeSignals = sortedSignals.take(indexOfInclusion)
             buildIncidents(compositeSignal)
                 .forEach { out.collect(it) }
+        } else {
+            log.info("Signal 0 and signal ${minRequiredActiveSignals - 1} outside time window: [${sortedSignals[0].timestamp}, ${sortedSignals[minRequiredActiveSignals - 1].timestamp}]")
         }
-        /*
-        * function input: list of CSs (the incoming Signal activated)
-        * loop through CSs as cs
-        *   x = determine required number of timely signals (threshold * cnt(PART_OF rels))-> round to next integer
-        *   if(number of rels with a set timestamp i.e not null < x)
-        *       -> break, this CS cannot be fired, process next CS
-        *   else
-        *       sorted = sort rels according to timestamp, item at index 0 most recent one
-        *       if(Duration.between(sorted[0],sorted[x-1]).seconds < coolDownSec)
-        *           Signals between [0] and [x-1] must be included in the Incident report, there will be one
-        *           if (x < sorted.length)
-        *               -> means there are more activated signals, but we have to check the time window for each one
-        *               index = x; twViolated = false
-        *               while(!twViolated && index < sorted.length)
-        *                   if(Duration.between(sorted[0],sorted[index]).seconds < coolDownSeconds)
-        *                       add signals at sorted[index] to the list of reported signals
-        *                       index++
-        *                   else
-        *                       twViolated = true
-        *           else
-        *               -> means there are exactly as many activated signals as required, nothing more to do
-        *           Generate incident report with signals, this CS; emit Incident
-        *       else
-        *          -> means that required signals are outside the time-window
-        *
-        * */
     }
 
     private fun areSignalsWithinTimeWindow(first: Signal, second: Signal, windowLengthSec: Int): Boolean {
-        return Duration.between(first.timestamp, second.timestamp).seconds < windowLengthSec
+        return Duration.between(first.timestamp, second.timestamp).abs().seconds < windowLengthSec
     }
 
     private fun buildIncidents(compositeSignal: CompositeSignal): List<Incident> {

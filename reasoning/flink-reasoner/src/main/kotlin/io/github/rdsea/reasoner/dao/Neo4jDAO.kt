@@ -54,8 +54,8 @@ class Neo4jDAO : DAO, Serializable {
 
     override fun updateSignalAndGetActivatedCompositeSignals(signal: Signal): List<CompositeSignal> {
         driver.session().use { session ->
-            val result: Result = session.writeTransaction { tx ->
-                tx.run(
+            return session.writeTransaction { tx ->
+                val res = tx.run(
                     if (signal.isActivated()) UPDATE_SIGNAL_ACTIVATED_QUERY else UPDATE_SIGNAL_SIMPLE_QUERY,
                     parameters(
                         "name", signal.name, "component", signal.pipelineComponent,
@@ -64,16 +64,19 @@ class Neo4jDAO : DAO, Serializable {
                         "summary", signal.summary, "details", gson.toJson(signal.details)
                     )
                 )
+                if (!signal.isActivated()) {
+                    emptyList()
+                } else {
+                    val compositeSignals = mutableListOf<CompositeSignal>()
+                    while (res.hasNext()) {
+                        val record: Record = res.next()
+                        val cs = gson.fromJson(gson.toJsonTree(record["cs"].asMap()), CompositeSignal::class.java)
+                        log.info("parsed composite signal: $cs")
+                        compositeSignals.add(cs)
+                    }
+                    compositeSignals
+                }
             }
-            if (!signal.isActivated()) return emptyList()
-            val compositeSignals = mutableListOf<CompositeSignal>()
-            while (result.hasNext()) {
-                val record: Record = result.next()
-                val cs = gson.fromJson(gson.toJsonTree(record["cs"].asMap()), CompositeSignal::class.java)
-                log.info("parsed composite signal: $cs")
-                compositeSignals.add(cs)
-            }
-            return compositeSignals
         }
     }
 
@@ -179,6 +182,7 @@ class Neo4jDAO : DAO, Serializable {
         // "MATCH (sig:Signal {name:s})\n" +
         // "RETURN incident,collect(sig)"
         private const val UPDATE_SIGNAL_ACTIVATED_QUERY = UPDATE_SIGNAL_SIMPLE_QUERY +
+            "WITH s\n" +
             "MATCH rels = ((s)-[:PART_OF]->(cs:CompositeSignal))\n" +
             "FOREACH (r IN relationships(rels) | SET r.activationTime=\$time )\n" +
             "WITH cs\n" +

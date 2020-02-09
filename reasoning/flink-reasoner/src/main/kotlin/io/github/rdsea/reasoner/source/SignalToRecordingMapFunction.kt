@@ -2,7 +2,6 @@ package io.github.rdsea.reasoner.source
 
 import io.github.rdsea.reasoner.domain.Signal
 import io.github.rdsea.reasoner.domain.SignalRecording
-import io.github.rdsea.reasoner.domain.toRecording
 import org.apache.flink.api.common.functions.MapFunction
 
 /**

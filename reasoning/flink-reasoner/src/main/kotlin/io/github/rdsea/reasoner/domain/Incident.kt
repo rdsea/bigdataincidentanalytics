@@ -18,9 +18,11 @@ data class Incident(
     var compositeSignal: CompositeSignal
 ) : Serializable {
 
-    private val activatedSignals = compositeSignal.activeSignals
     private val summary = "Incident \"${this.name}\" is active! " +
-        "It is indicated by ${this.activatedSignals.size} signal(s)."
+        "It is indicated by ${this.compositeSignal.activeSignals.size} signal(s)."
+    private val participatingComponents = compositeSignal.activeSignals
+        .map { it.pipelineComponent }
+        .distinct()
 
     companion object {
         private const val serialVersionUID = 20180617104402L

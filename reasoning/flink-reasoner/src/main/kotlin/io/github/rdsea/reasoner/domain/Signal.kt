@@ -34,7 +34,7 @@ data class Signal(
     }
 
     fun isWithinCoolDownWindow(): Boolean {
-        return this.lastSignalTime == null || Duration.between(lastSignalTime, timestamp).seconds < coolDownSec
+        return this.lastSignalTime == null || Duration.between(lastSignalTime, timestamp).abs().seconds < coolDownSec
     }
 
     fun isCounterInitialized(): Boolean {
