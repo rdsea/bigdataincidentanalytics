@@ -276,7 +276,7 @@ hs_err_pid*
 /monitoring/mqtt-to-kafka/package-lock.json
 /monitoring/mqtt-to-kafka/node_modules/
 /pipeline/flink/iot-big-data-flink/out/
-/reasoning/database/data/
+/reasoning/neo4j/data/
 /reasoning/ingestion-service/package-lock.json
 /reasoning/ingestion-service/node_modules/
 /reasoning/cassandra/data/

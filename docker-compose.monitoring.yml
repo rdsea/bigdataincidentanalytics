@@ -70,10 +70,10 @@ services:
       - NEO4J_dbms_security_procedures_unrestricted=apoc.*,algo.*
       - NEO4J_AUTH=neo4j/test
     volumes:
-      - ./reasoning/database/import:/var/lib/neo4j/import
-      - ./reasoning/database/data:/data
-      - ./reasoning/database/neo4j-graph-algorithms-3.5.14.0-standalone.jar:/var/lib/neo4j/plugins/neo4j-graph-algorithms-3.5.14.0-standalone.jar
-      - ./reasoning/database/apoc-3.5.0.7-all.jar:/var/lib/neo4j/plugins/apoc-3.5.0.7-all.jar
+      - ./reasoning/neo4j/import:/var/lib/neo4j/import
+      - ./reasoning/neo4j/data:/data
+      - ./reasoning/neo4j/neo4j-graph-algorithms-3.5.14.0-standalone.jar:/var/lib/neo4j/plugins/neo4j-graph-algorithms-3.5.14.0-standalone.jar
+      - ./reasoning/neo4j/apoc-3.5.0.7-all.jar:/var/lib/neo4j/plugins/apoc-3.5.0.7-all.jar
     networks:
       - iot-big-data
     ports:

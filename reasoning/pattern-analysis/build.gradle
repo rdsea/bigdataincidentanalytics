@@ -24,12 +24,11 @@ configurations {
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
     ktlint "com.pinterest:ktlint:0.36.0"
-    implementation 'org.apache.spark:spark-core_2.11:2.4.5'
-    implementation 'org.apache.spark:spark-sql_2.11:2.4.5'
-    implementation 'org.apache.spark:spark-mllib_2.11:2.4.5'
-    implementation 'com.datastax.spark:spark-cassandra-connector_2.11:2.4.2'
-    implementation 'org.elasticsearch:elasticsearch-spark-20_2.11:7.4.2'
-    implementation 'com.google.code.gson:gson:2.8.6'
+    shadow 'org.apache.spark:spark-core_2.11:2.4.5'
+    shadow 'org.apache.spark:spark-sql_2.11:2.4.5'
+    shadow 'org.apache.spark:spark-mllib_2.11:2.4.5'
+    shadow 'com.datastax.spark:spark-cassandra-connector_2.11:2.4.2'
+    shadow 'org.elasticsearch:elasticsearch-spark-20_2.11:7.4.2'
 }
 
 compileKotlin {
@@ -57,9 +56,4 @@ task ktlintFormat(type: JavaExec, group: "formatting") {
 shadowJar {
     baseName = 'pattern-analysis'
     zip64 = true
-    dependencies {
-        exclude(dependency('org.apache.spark:spark-core_2.11:2.4.5'))
-        exclude(dependency('org.apache.spark:spark-sql_2.11:2.4.5'))
-        exclude(dependency('org.apache.spark:spark-mllib_2.11:2.4.5'))
-    }
 }
