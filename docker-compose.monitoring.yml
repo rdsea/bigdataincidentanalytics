@@ -64,11 +64,9 @@ services:
 
   ##### NEO4J GRAPH DATABASE AS KNOWLEDGE BASE FOR INCIDENT REASONING #####
   neo4j:
-    #image: neo4j/neo4j-experimental:4.0.0-rc01
     image: neo4j:3.5.14
     container_name: neo4j
     environment:
-      #- NEO4JLABS_PLUGINS=["apoc"]
       - NEO4J_dbms_security_procedures_unrestricted=apoc.*,algo.*
       - NEO4J_AUTH=neo4j/test
     volumes:
@@ -130,6 +128,7 @@ services:
     networks:
       - iot-big-data
 
+  ##### LONG-TERM STORAGE OF SIGNALS FOR DATA ANALYSIS #####
   cassandra:
     image: cassandra:3.0
     container_name: cassandra
@@ -143,6 +142,53 @@ services:
       HEAP_NEWSIZE: 256M
     volumes:
       - ./reasoning/cassandra/data:/var/lib/cassandra
+    networks:
+      - iot-big-data
+
+  ##### APACHE SPARK MASTER FOR RUNNING THE FREQUENT PATTERN MINING TASK #####
+  analysis-spark-master:
+    image: pattern-analysis-spark:latest
+    container_name: analysis-spark-master
+    ports:
+      - 8084:8080
+    expose:
+      - 7077
+    volumes:
+      - $ETC_LOCALTIME:/etc/localtime:ro
+    networks:
+      - iot-big-data
+
+  ##### APACHE SPARK WORKER FOR RUNNING THE FREQUENT PATTERN MINING TASK #####
+  analysis-spark-worker:
+    image: pattern-analysis-spark:latest
+    ports:
+      - 8081
+    environment:
+      SPARK_MASTER: spark://analysis-spark-master:7077
+    volumes:
+      - $ETC_LOCALTIME:/etc/localtime:ro
+    command: /bin/bash /worker.sh
+    networks:
+      - iot-big-data
+
+  ##### SUBMIT TASK FOR RUNNING THE FREQUENT PATTERN MINING TASK #####
+  spark-submit:
+    image: pattern-analysis-spark:latest
+    container_name: spark-submit
+    environment:
+      SPARK_MASTER_NAME: analysis-spark-master
+      SPARK_MASTER_PORT: 7077
+      SPARK_APPLICATION_JAR_LOCATION: /spark/pattern-analysis-1.0-SNAPSHOT-all.jar
+      SPARK_APPLICATION_MAIN_CLASS: io.github.rdsea.analysis.Main
+      APP_CASSANDRA_HOST: cassandra
+      APP_ELASTICSEARCH_HOST: elasticsearch
+      APP_ELASTICSEARCH_PORT: 9200
+      APP_FP_MIN_SUPPORT: 0.1
+      APP_FP_MIN_CONFIDENCE: 0.5
+    volumes:
+      - $ETC_LOCALTIME:/etc/localtime:ro
+      - ./reasoning/pattern-analysis/build/libs/pattern-analysis-1.0-SNAPSHOT-all.jar:/spark/pattern-analysis-1.0-SNAPSHOT-all.jar
+    command: /bin/bash /submit.sh
     networks:
       - iot-big-data
 

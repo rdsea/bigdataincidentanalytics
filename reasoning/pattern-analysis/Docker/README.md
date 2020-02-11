@@ -1,0 +1,1 @@
+The Dockerfile and scripts are adapted and taken over from [Big Data Europe Spark docker image](https://github.com/big-data-europe/docker-spark). 

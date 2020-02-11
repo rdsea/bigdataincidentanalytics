@@ -28,91 +28,71 @@ import org.elasticsearch.spark.sql.api.java.JavaEsSparkSQL
 class Main {
 
     companion object {
+        private val MASTER_URL = System.getenv("SPARK_MASTER_URL")
+        private val CASSANDRA_HOST = System.getenv("APP_CASSANDRA_HOST")
+        private val ELASTICSEARCH_HOST = System.getenv("APP_ELASTICSEARCH_HOST")
+        private val ELASTICSEARCH_PORT = System.getenv("APP_ELASTICSEARCH_PORT")
+        private val FP_MIN_SUPPORT = System.getenv("APP_FP_MIN_SUPPORT").toDouble()
+        private val FP_MIN_CONFIDENCE = System.getenv("APP_FP_MIN_CONFIDENCE").toDouble()
+
         @JvmStatic fun main(args: Array<String>) {
             val conf = SparkConf(true)
-                .set("spark.cassandra.connection.host", "localhost")
+                .set("spark.cassandra.connection.host", CASSANDRA_HOST)
                 .set("spark.sql.session.timeZone", "UTC")
-                .set("spark.es.nodes","192.168.0.95")
-                .set("spark.es.port","9200")
-                .set("spark.es.index.auto.create", "true")
-            val sc = SparkContext("spark://MacBook-Pro.local:7077", "Frequent Pattern Mining", conf)
+                .set("es.nodes", ELASTICSEARCH_HOST)
+                .set("es.port", ELASTICSEARCH_PORT)
+                .set("es.index.auto.create", "true")
+                .set("es.nodes.discovery", "true")
+            val sc = SparkContext(MASTER_URL, "Frequent Pattern Mining", conf)
             sc.setLogLevel("WARN")
-            val spark = SparkSession.builder()
-                .sparkContext(sc)
-                .orCreate
-            val rdd: JavaRDD<Item> = javaFunctions(sc)
-                .cassandraTable("incident_analytics", "signals", mapRowTo(SignalRecord::class.java))
-                .select(
-                    column("uuid"),
-                    column("signal_name").`as`("name"),
-                    column("pipeline_component").`as`("pipelineComponent"),
-                    column("timestamp")
-                ).map { Item("${it.name}#${it.pipelineComponent}", it.timestamp) }
-            val df = spark.createDataFrame(rdd, Item::class.java)
+            val sparkSession = SparkSession.builder().sparkContext(sc).orCreate
 
-            val ds = df.select("*")
+            // Read data from Cassandra and map each record to a simplified one suitable for FP-Mining
+            val rdd: JavaRDD<Item> = readRecordsFromCassandra(sc)
+                .map { Item("${it.name}#${it.pipelineComponent}", it.timestamp) }
+
+            // Assign items to 1-minute time windows and collect them to a list
+            // Example row: time-window1: [SignalName1, SignalName2, SignalName3]
+            val dataFrame = sparkSession.createDataFrame(rdd, Item::class.java)
+                .select("*")
                 .groupBy(window(Column("timestamp"), "1 minute")) // TODO consider sliding windows
                 .agg(collect_list("signalId"))
                 .orderBy(col("window"))
                 .withColumn("signals_set", array_distinct(col("collect_list(signalId)")))
                 .drop("window", "collect_list(signalId)")
 
+            // Perform FP-Mining via Spark MLlib's FPGrowth algorithm
             val model = FPGrowth()
                 .setItemsCol("signals_set")
-                .setMinSupport(0.1)
-                .setMinConfidence(0.5)
-                .fit(ds)
+                .setMinSupport(FP_MIN_SUPPORT)
+                .setMinConfidence(FP_MIN_CONFIDENCE)
+                .fit(dataFrame)
 
-            println("Frequent item sets:\n")
+            // Intermediary output of frequent item sets, can be removed
             model.freqItemsets().show(false)
-            /* Example output
-            +---------------------------------------------------------+----+
-            |items                                                    |freq|
-            +---------------------------------------------------------+----+
-            |[MqttStartupLog#MQTT_BROKER]                             |9   |
-            |[MqttStartupLog#MQTT_BROKER, MqttShutdownLog#MQTT_BROKER]|8   |
-            +---------------------------------------------------------+----+
 
-             */
-
-            println("Association rules:\n")
+            // Intermediary output of derived association rules, can be removed
             model.associationRules().show(false)
-            /* Example output
-            +-----------------------------+-----------------------------+------------------+------------------+
-            |antecedent                   |consequent                   |confidence        |lift              |
-            +-----------------------------+-----------------------------+------------------+------------------+
-            |[MqttShutdownLog#MQTT_BROKER]|[MqttStartupLog#MQTT_BROKER] |0.7272727272727273|1.0505050505050506|
-            +-----------------------------+-----------------------------+------------------+------------------+
 
-             */
-
-            println("Predictions:\n")
-            val predictions = model.transform(ds)
-            predictions.show(false)
-            val x = predictions.filter(size(col("prediction")).`$greater`(0))
+            // Get predictions on the original dataset.
+            // Empty predictions are filtered out and duplicate ones removed.
+            val predictions = model.transform(dataFrame)
+                .filter(size(col("prediction")).`$greater`(0))
                 .dropDuplicates()
-            JavaEsSparkSQL.saveToEs(x, "correlated-signal-predictions")
 
-            /* ds.select("*").orderBy(col("window")).show(20, false)
-            ds.withColumn("window", ds.col("window").cast(DataTypes.StringType))
-                .withColumn("unique_signals", ds.col("unique_signals").cast(DataTypes.StringType))
-                .drop("collect_list(signalId)")
-                .coalesce(1)
-                .write()
-                .option("header", true)
-                .csv("/Users/danielfuvesi/Repositories/bigdataincidentanalytics/reasoning/pattern-analysis/table.csv")*/
+            // Store the predictions in Elasticsearch for delivery, where operators can get notified about them
+            JavaEsSparkSQL.saveToEs(predictions, "correlated-signal-predictions")
+        }
 
-            /*val df = spark.read()
-                .format("org.apache.spark.sql.cassandra")
-                .options(mapOf("table" to "signals","keyspace" to "incident_analytics"))
-                .schema(StructType()
-                    .add(StructField("uuid",DataTypes.StringType, false, Metadata.empty()))
-                    .add(StructField("pipeline_component",DataTypes.StringType, false, Metadata.empty()))
-                    .add(StructField("signal_name",DataTypes.StringType, false, Metadata.empty()))
-                    .add(StructField("timestamp",DataTypes.TimestampType, false, Metadata.empty()))
+        private fun readRecordsFromCassandra(sparkContext: SparkContext): JavaRDD<SignalRecord> {
+            return javaFunctions(sparkContext)
+                .cassandraTable("incident_analytics", "signals", mapRowTo(SignalRecord::class.java))
+                .select(
+                    column("uuid"),
+                    column("signal_name").`as`("name"),
+                    column("pipeline_component").`as`("pipelineComponent"),
+                    column("timestamp")
                 )
-                .load()
-            df.select()*/
         }
     }
 }
