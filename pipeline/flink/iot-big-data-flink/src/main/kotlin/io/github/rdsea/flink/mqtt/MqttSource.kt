@@ -5,6 +5,10 @@ import com.google.gson.reflect.TypeToken
 import io.github.rdsea.flink.FLUENCY
 import io.github.rdsea.flink.FLUENTD_PREFIX
 import io.github.rdsea.flink.util.CloudEventDateTimeFormatter
+import java.net.URI
+import java.time.Instant
+import java.util.UUID
+import java.util.concurrent.atomic.AtomicBoolean
 import org.apache.flink.configuration.Configuration
 import org.apache.flink.streaming.api.functions.source.RichSourceFunction
 import org.apache.flink.streaming.api.functions.source.SourceFunction
@@ -12,10 +16,6 @@ import org.fusesource.mqtt.client.MQTT
 import org.fusesource.mqtt.client.QoS
 import org.fusesource.mqtt.client.Topic
 import org.komamitsu.fluency.EventTime
-import java.net.URI
-import java.time.Instant
-import java.util.UUID
-import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * <h4>About this class</h4>
@@ -70,7 +70,8 @@ class MqttSource(
             val time = Instant.now()
             FLUENCY.emit(
                 "$FLUENTD_PREFIX.mqtt.app.dataAsset",
-                EventTime.fromEpoch(time.epochSecond, time.nano.toLong()), mapOf(
+                EventTime.fromEpoch(time.epochSecond, time.nano.toLong()),
+                mapOf(
                     Pair("specversion", "0.3"),
                     Pair("id", UUID.randomUUID().toString()),
                     Pair("type", "$FLUENTD_PREFIX.mqtt.app.dataAsset"),

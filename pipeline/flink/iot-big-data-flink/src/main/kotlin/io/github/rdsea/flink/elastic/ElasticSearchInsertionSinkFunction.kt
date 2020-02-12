@@ -7,6 +7,9 @@ import io.github.rdsea.flink.FLUENTD_PREFIX
 import io.github.rdsea.flink.domain.WindowedSensorReport
 import io.github.rdsea.flink.util.CloudEventDateTimeFormatter
 import io.github.rdsea.flink.util.LocalDateTimeJsonSerializer
+import java.time.Instant
+import java.time.LocalDateTime
+import java.util.UUID
 import mu.KLogging
 import org.apache.flink.api.common.functions.RuntimeContext
 import org.apache.flink.streaming.connectors.elasticsearch.ElasticsearchSinkFunction
@@ -14,9 +17,6 @@ import org.apache.flink.streaming.connectors.elasticsearch.RequestIndexer
 import org.elasticsearch.action.index.IndexRequest
 import org.elasticsearch.client.Requests
 import org.komamitsu.fluency.EventTime
-import java.time.Instant
-import java.time.LocalDateTime
-import java.util.UUID
 
 /**
  * <h4>About this class</h4>
@@ -35,7 +35,8 @@ class ElasticSearchInsertionSinkFunction : ElasticsearchSinkFunction<WindowedSen
         indexer.add(indexRequest)
 
         val instant = Instant.now()
-        FLUENCY.emit("$FLUENTD_PREFIX.storage.app.dataAsset",
+        FLUENCY.emit(
+            "$FLUENTD_PREFIX.storage.app.dataAsset",
             EventTime.fromEpoch(instant.epochSecond, instant.nano.toLong()),
             mapOf(
                 Pair("specversion", "0.3"),

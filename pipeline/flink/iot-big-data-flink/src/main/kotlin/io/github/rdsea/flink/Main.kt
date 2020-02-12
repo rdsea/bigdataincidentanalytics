@@ -6,11 +6,11 @@ import io.github.rdsea.flink.mqtt.MqttSource
 import io.github.rdsea.flink.processing.SensorDataWindowFunction
 import io.github.rdsea.flink.processing.SensorRecordKeySelector
 import io.github.rdsea.flink.util.Configuration
+import java.lang.IllegalArgumentException
+import java.net.URI
 import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment
 import org.komamitsu.fluency.Fluency
 import org.komamitsu.fluency.fluentd.FluencyBuilderForFluentd
-import java.lang.IllegalArgumentException
-import java.net.URI
 
 /**
  * <h4>About this class</h4>

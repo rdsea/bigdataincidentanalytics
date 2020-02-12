@@ -24,8 +24,8 @@ configurations {
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
     ktlint "com.pinterest:ktlint:0.36.0"
-    implementation "org.apache.flink:flink-java:1.9.1"
-    implementation "org.apache.flink:flink-streaming-java_2.12:1.9.1"
+    shadow "org.apache.flink:flink-java:1.9.1"
+    shadow "org.apache.flink:flink-streaming-java_2.12:1.9.1"
     implementation "org.apache.flink:flink-connector-elasticsearch6_2.11:1.9.1"
     implementation "org.apache.flink:flink-connector-kafka_2.12:1.9.1"
     implementation "org.apache.flink:flink-connector-cassandra_2.12:1.9.1"

@@ -2,16 +2,16 @@ package io.github.rdsea.flink.processing
 
 import io.github.rdsea.flink.FLUENCY
 import io.github.rdsea.flink.FLUENTD_PREFIX
-import io.github.rdsea.flink.domain.WindowedSensorReport
 import io.github.rdsea.flink.domain.SensorRecord
+import io.github.rdsea.flink.domain.WindowedSensorReport
 import io.github.rdsea.flink.util.CloudEventDateTimeFormatter
 import io.github.rdsea.flink.util.LocalDateTimeJsonSerializer
+import java.time.Instant
+import java.util.UUID
 import org.apache.flink.streaming.api.functions.windowing.WindowFunction
 import org.apache.flink.streaming.api.windowing.windows.GlobalWindow
 import org.apache.flink.util.Collector
 import org.komamitsu.fluency.EventTime
-import java.time.Instant
-import java.util.UUID
 
 /**
  * <h4>About this class</h4>
@@ -42,11 +42,14 @@ class SensorDataWindowFunction : WindowFunction<SensorRecord, WindowedSensorRepo
     ) {
         val records = input.iterator().asSequence().toList()
         val reportId = UUID.randomUUID().toString()
-        val result = WindowedSensorReport(reportId, key, records.size, records.map { it.humidity }.average(), records.map { it.temperature }.average(),
-            records.map { it.time.format(LocalDateTimeJsonSerializer.formatter) })
+        val result = WindowedSensorReport(
+            reportId, key, records.size, records.map { it.humidity }.average(), records.map { it.temperature }.average(),
+            records.map { it.time.format(LocalDateTimeJsonSerializer.formatter) }
+        )
 
         val instant = Instant.now()
-        FLUENCY.emit("$FLUENTD_PREFIX.aggregation.app.dataAsset",
+        FLUENCY.emit(
+            "$FLUENTD_PREFIX.aggregation.app.dataAsset",
             EventTime.fromEpoch(instant.epochSecond, instant.nano.toLong()),
             mapOf(
                 Pair("specversion", "0.3"),

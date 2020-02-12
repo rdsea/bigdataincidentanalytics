@@ -3,8 +3,8 @@ package io.github.rdsea.flink.mqtt
 import com.google.gson.GsonBuilder
 import io.github.rdsea.flink.domain.SensorRecord
 import io.github.rdsea.flink.util.LocalDateTimeJsonSerializer
-import org.apache.flink.api.common.functions.MapFunction
 import java.time.LocalDateTime
+import org.apache.flink.api.common.functions.MapFunction
 
 /**
  * <h4>About this class</h4>
