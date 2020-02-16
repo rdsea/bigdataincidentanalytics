@@ -32,25 +32,20 @@ class SignalProcessFunction(private val dao: DAO) : ProcessFunction<Signal, Comp
     }
 
     override fun processElement(value: Signal, ctx: Context, out: Collector<CompositeSignal>) {
-        val optional = dao.findSignal(value)
-        if (optional.isPresent) {
-            val signalNode = optional.get()
-            log.info("Signal Node: $signalNode")
-            val incomingSignalTime = signalNode.timestamp
-            if (signalNode.requiresMultipleOccurrences()) {
-                if (signalNode.isWithinCoolDownWindow() && signalNode.isCounterInitialized()) {
-                    signalNode.thresholdCounter = signalNode.thresholdCounter + 1
-                } else {
-                    signalNode.thresholdCounter = 1
-                }
-                signalNode.lastSignalTime = incomingSignalTime
+        val signalNode = dao.findSignalOrCreate(value)
+        log.info("Signal Node: $signalNode")
+        val incomingSignalTime = signalNode.timestamp
+        if (signalNode.requiresMultipleOccurrences()) {
+            if (signalNode.isWithinCoolDownWindow() && signalNode.isCounterInitialized()) {
+                signalNode.thresholdCounter = signalNode.thresholdCounter + 1
+            } else {
+                signalNode.thresholdCounter = 1
             }
-            val potentiallyActivatedCompositeSignals = dao.updateSignalAndGetActivatedCompositeSignals(signalNode)
-            potentiallyActivatedCompositeSignals.forEach { out.collect(it) }
-            ctx.output(sideOutputTag, signalNode)
-        } else {
-            log.info("There is no signal in the knowledge base with name \"${value.name}\" and component ${value.pipelineComponent}!")
+            signalNode.lastSignalTime = incomingSignalTime
         }
+        val potentiallyActivatedCompositeSignals = dao.updateSignalAndGetActivatedCompositeSignals(signalNode)
+        potentiallyActivatedCompositeSignals.forEach { out.collect(it) }
+        ctx.output(sideOutputTag, signalNode)
     }
 
     override fun close() {

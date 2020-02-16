@@ -3,7 +3,6 @@ package io.github.rdsea.reasoner.dao
 import io.github.rdsea.reasoner.domain.CompositeSignal
 import io.github.rdsea.reasoner.domain.IncidentEntity
 import io.github.rdsea.reasoner.domain.Signal
-import java.util.Optional
 
 /**
  * <h4>About this class</h4>
@@ -18,7 +17,7 @@ interface DAO {
 
     fun initialize()
 
-    fun findSignal(signal: Signal): Optional<Signal>
+    fun findSignalOrCreate(signal: Signal): Signal
 
     fun updateSignalAndGetActivatedCompositeSignals(signal: Signal): List<CompositeSignal>
 

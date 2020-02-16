@@ -6,7 +6,6 @@ import io.github.rdsea.reasoner.domain.CompositeSignal
 import io.github.rdsea.reasoner.domain.IncidentEntity
 import io.github.rdsea.reasoner.domain.Signal
 import java.io.Serializable
-import java.util.Optional
 import org.neo4j.driver.Driver
 import org.neo4j.driver.Record
 import org.neo4j.driver.Result
@@ -36,18 +35,18 @@ class Neo4jDAO : DAO, Serializable {
         gson = Main.gson
     }
 
-    override fun findSignal(signal: Signal): Optional<Signal> {
+    override fun findSignalOrCreate(signal: Signal): Signal {
         driver.session().use { session ->
             val result: Result = session.run(
-                FIND_SIGNAL_QUERY,
+                FIND_OR_CREATE_SIGNAL_QUERY,
                 parameters("name", signal.name, "component", signal.pipelineComponent)
             )
             if (result.hasNext()) {
                 val node: Node = result.next().get("s").asNode()
                 val persistedSignal = gson.fromJson(gson.toJson(node.asMap()), Signal::class.java)
-                return Optional.of(mergeSignals(signal, persistedSignal))
+                return mergeSignals(signal, persistedSignal)
             }
-            return Optional.empty()
+            throw IllegalStateException("Unable to find or create signal $signal")
         }
     }
 
@@ -112,14 +111,14 @@ class Neo4jDAO : DAO, Serializable {
     companion object {
         private const val serialVersionUID = 20180617104400L
         // Simply matches Signal node with the provided name and pipeline component
-        private const val MATCH_SIGNAL_BY_COMP = "MATCH (s:Signal {name:\$name}) " +
-            "MATCH (s)-[:SIGNALLED_BY]->(:DataPipeline {name:\$component}) "
+        private const val MATCH_OR_CREATE_SIGNAL_BY_COMP = "MERGE (s:Signal {name:\$name}) " +
+            "MERGE (s)-[:SIGNALLED_BY]->(:DataPipeline {name:\$component}) "
 
         // Returns the Signal node(s) found by the above query
-        private const val FIND_SIGNAL_QUERY = MATCH_SIGNAL_BY_COMP + "RETURN s"
+        private const val FIND_OR_CREATE_SIGNAL_QUERY = MATCH_OR_CREATE_SIGNAL_BY_COMP + "RETURN s"
 
         // Simply updates a Signal's properties that is identified by its name and corresponding pipeline component
-        private const val UPDATE_SIGNAL_WITHOUT_TRIGGER_QUERY = MATCH_SIGNAL_BY_COMP +
+        private const val UPDATE_SIGNAL_WITHOUT_TRIGGER_QUERY = MATCH_OR_CREATE_SIGNAL_BY_COMP +
             "SET s.thresholdCounter = \$counter " +
             "SET s.lastSignalTime = \$time " +
             "SET s.summary = \$summary " +
