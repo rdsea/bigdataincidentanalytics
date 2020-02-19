@@ -110,9 +110,10 @@ class Neo4jDAO : DAO, Serializable {
 
     companion object {
         private const val serialVersionUID = 20180617104400L
-        // Simply matches Signal node with the provided name and pipeline component
-        private const val MATCH_OR_CREATE_SIGNAL_BY_COMP = "MERGE (s:Signal {name:\$name}) " +
-            "MERGE (s)-[:SIGNALLED_BY]->(:DataPipeline {name:\$component}) "
+        // Tries to find a signal with the given name and connected pipeline component and creates it if it doesn't exist.
+        private const val MATCH_OR_CREATE_SIGNAL_BY_COMP = "MATCH (dp:DataPipeline{name:\$component}) " +
+            "MERGE (s:Signal {name:\$name}) " +
+            "MERGE (s)-[:SIGNALLED_BY]->(dp) "
 
         // Returns the Signal node(s) found by the above query
         private const val FIND_OR_CREATE_SIGNAL_QUERY = MATCH_OR_CREATE_SIGNAL_BY_COMP + "RETURN s"
