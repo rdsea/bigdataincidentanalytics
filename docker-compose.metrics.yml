@@ -12,6 +12,7 @@ services:
       - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
       - ./monitoring/prometheus/targets.json:/etc/prometheus/targets.json
       - ./monitoring/prometheus/rules/:/etc/prometheus/rules/
+    command: "--web.enable-lifecycle --config.file=/etc/prometheus/prometheus.yml"
     networks:
       - iot-big-data
 

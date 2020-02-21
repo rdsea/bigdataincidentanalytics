@@ -42,5 +42,11 @@
     "labels": {
       "job": "hdfs-resourcemanager"
     }
+  },
+  {
+    "targets": [ "nodered:1881"],
+    "labels": {
+      "job": "node-red"
+    }
   }
 ]

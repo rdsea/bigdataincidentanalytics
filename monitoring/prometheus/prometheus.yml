@@ -4,6 +4,7 @@ global:
 
 rule_files:
   - "./rules/mqtt.yml"
+  - "./rules/nodered.yml"
 
 # The targets are moved to a separate 'targets.json' file on purpose.
 # With file_sd_configs Prometheus can watch the file for changes, this means we can

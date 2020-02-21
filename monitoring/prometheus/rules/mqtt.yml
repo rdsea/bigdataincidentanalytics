@@ -1,11 +1,11 @@
 groups:
 - name: MQTT_BROKER
   rules:
-  - alert: MqttInstanceDown
-    expr: increase(broker_uptime{job="mqtt"}[1m]) == 0
+  - alert: MqttInstanceDownAlert
+    expr: increase(broker_uptime{job="mqtt"}[30s]) == 0
     labels:
       severity: critical
       pipeline_component: MQTT_BROKER
     annotations:
-      summary: "Instance {{ $labels.instance }} down"
-      description: "{{ $labels.instance }} of job {{ $labels.job }} has been down for more than 1 minute."
+      summary: "MQTT not reachable"
+      description: "{{ $labels.instance }} of job {{ $labels.job }} has not been receiving any increase in the broker's uptime for half a minute."

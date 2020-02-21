@@ -1,0 +1,11 @@
+groups:
+  - name: NODE-RED
+    rules:
+      - alert: NotReceivingSensorData
+        expr: increase(mqtt_received_data_packets_total{job="node-red"}[30s]) == 0
+        labels:
+          severity: critical
+          pipeline_component: NODE-RED
+        annotations:
+          summary: "Instance {{ $labels.instance }} is not receiving sensor data"
+          description: "{{ $labels.instance }} of job {{ $labels.job }} has not been receiving any sensor data from the MQTT broker for the last 30 seconds."
