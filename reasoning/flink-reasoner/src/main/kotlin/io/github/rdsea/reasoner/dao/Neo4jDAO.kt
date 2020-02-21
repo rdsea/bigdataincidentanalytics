@@ -3,6 +3,7 @@ package io.github.rdsea.reasoner.dao
 import com.google.gson.Gson
 import io.github.rdsea.reasoner.Main
 import io.github.rdsea.reasoner.domain.CompositeSignal
+import io.github.rdsea.reasoner.domain.Incident
 import io.github.rdsea.reasoner.domain.IncidentEntity
 import io.github.rdsea.reasoner.domain.Signal
 import java.io.Serializable
@@ -59,7 +60,8 @@ class Neo4jDAO : DAO, Serializable {
                         "name", signal.name, "component", signal.pipelineComponent,
                         "counter", if (signal.thresholdCounter == -1) null else { signal.thresholdCounter },
                         "time", signal.timestamp,
-                        "summary", signal.summary, "details", gson.toJson(signal.details)
+                        "summary", signal.summary, "details", gson.toJson(signal.details),
+                        "defaultActivationThreshold", CompositeSignal.DEFAULT_ACTIVATION_THRESHOLD
                     )
                 )
                 if (!signal.isActivated()) {
@@ -69,6 +71,7 @@ class Neo4jDAO : DAO, Serializable {
                     while (res.hasNext()) {
                         val record: Record = res.next()
                         val cs = gson.fromJson(gson.toJsonTree(record["cs"].asMap()), CompositeSignal::class.java)
+                        cs.activeSignalsSorted = cs.activeSignalsSorted.sortedByDescending { it.timestamp }
                         log.info("parsed composite signal: $cs")
                         compositeSignals.add(cs)
                     }
@@ -78,9 +81,35 @@ class Neo4jDAO : DAO, Serializable {
         }
     }
 
+    override fun resetSignalActivationForCompositeSignal(signals: List<Signal>, compositeSignal: CompositeSignal) {
+        val signalsNameList = mutableListOf<String>()
+        val signalComponentsList = mutableListOf<String>()
+        signals.forEach {
+            signalsNameList.add(it.name)
+            signalComponentsList.add(it.pipelineComponent)
+        }
+        driver.session().use { session ->
+            return session.writeTransaction { tx ->
+                tx.run(
+                    RESET_SIGNALS_ACTIVATION_TIME_QUERY,
+                    parameters(
+                        "signalNamesList", signalsNameList, "signalComponentsList", signalComponentsList,
+                        "compSigName", compositeSignal.name
+                    )
+                )
+            }
+        }
+    }
+
     override fun findIncidentsOfCompositeSignal(compositeSignal: CompositeSignal): List<IncidentEntity> {
         driver.session().use { session ->
-            val result: Result = session.run(INCIDENTS_OF_COMPOSITE_SIGNALS_QUERY, parameters("name", compositeSignal.name))
+            val result: Result = session.run(
+                INCIDENTS_OF_COMPOSITE_SIGNALS_QUERY,
+                parameters(
+                    "name", compositeSignal.name,
+                    "compSignalTime", compositeSignal.activeSignalsSorted.first().timestamp
+                )
+            )
             if (result.hasNext()) {
                 val record: Record = result.next()
                 return record["collect(incident)"].asList { it.asMap() }.map { gson.fromJson(gson.toJsonTree(it), IncidentEntity::class.java) }
@@ -113,8 +142,7 @@ class Neo4jDAO : DAO, Serializable {
         // Tries to find a signal with the given name and connected pipeline component and creates it if it doesn't exist.
         private const val MATCH_OR_CREATE_SIGNAL_BY_COMP = "MATCH (dp:DataPipeline{name:\$component}) " +
             "MATCH (e:Element{name:'Signal'}) " +
-            "MERGE (s:Signal {name:\$name}) " +
-            "MERGE (s)-[:SIGNALLED_BY]->(dp) " +
+            "MERGE (s:Signal {name:\$name})-[:SIGNALLED_BY]->(dp) " +
             "MERGE (e)-[:IS]->(s) "
 
         // Returns the Signal node(s) found by the above query
@@ -125,12 +153,27 @@ class Neo4jDAO : DAO, Serializable {
             "SET s.thresholdCounter = \$counter " +
             "SET s.lastSignalTime = \$time " +
             "SET s.summary = \$summary " +
-            "SET s.details = \$details "
+            "SET s.details = \$details \n"
 
-        // Returns a list of incident nodes the CompositeSignal with the given name indicates
-        private const val INCIDENTS_OF_COMPOSITE_SIGNALS_QUERY = "MATCH (cs:CompositeSignal {name:\$name})\n" +
-            "MATCH (cs)-[:INDICATES]->(incident:Incident)\n" +
+        // Returns a list of incident nodes the CompositeSignal with the given name indicates,
+        // BUT only those that haven't already been reported in the last RE_NOTIFICATION_WAIT_SEC seconds
+        private const val INCIDENTS_OF_COMPOSITE_SIGNALS_QUERY = "MATCH (cs:CompositeSignal {name:\$name}) " +
+            "MATCH (cs)-[r:INDICATES]->(incident:Incident) " +
+            "WHERE duration.inSeconds(COALESCE(r.lastActivation,localdatetime('1990-01-01T00:00:00')),\$compSignalTime).seconds > ${Incident.RE_NOTIFICATION_WAIT_SEC} " +
+            "SET r.lastActivation=\$compSignalTime " +
             "RETURN collect(incident)"
+
+        // For a given CompositeSignal and a list of Signals (expressed through a list of Signal names and a list of
+        // pipeline component names) this query removes the 'activationTime' property from the relationship between the
+        // CompositeSignal and each given Signal.
+        private const val RESET_SIGNALS_ACTIVATION_TIME_QUERY = "WITH \$signalNamesList as signalNames, " +
+            "\$signalComponentsList as signalComponents " +
+            "UNWIND range(0,size(signalNames)-1) as i " +
+            "MATCH (Element {name:'CompositeSignal'})-[:IS]->(cs:CompositeSignal {name:\$compSigName}) " +
+            "MATCH (s:Signal)-[:SIGNALLED_BY]->(pc:DataPipeline) " +
+            "WHERE s.name=signalNames[i] AND pc.name=signalComponents[i] " +
+            "MATCH (s)-[r:PART_OF]->(cs) " +
+            "SET r.activationTime=null"
 
         // Updates a Signal's properties and further collects all CompositeSignals this signal may have potentially
         // triggered. For all CompositeSignal this Signal is connected to, the query
@@ -141,21 +184,21 @@ class Neo4jDAO : DAO, Serializable {
         // (iii) The result is collected into a list of CompositeSignal and for each Signal the pipeline component and
         // the timestamp properties are also derived from their relationships
         private const val UPDATE_SIGNAL_WITH_TRIGGER_QUERY = UPDATE_SIGNAL_WITHOUT_TRIGGER_QUERY +
-            "WITH s\n" +
-            "MATCH rels = ((s)-[:PART_OF]->(cs:CompositeSignal))\n" +
-            "FOREACH (r IN relationships(rels) | SET r.activationTime=\$time )\n" +
-            "WITH cs\n" +
-            "MATCH ()-[signalRels:PART_OF]->(cs)\n" +
-            "WITH cs, count(signalRels) as numConnectedSignal\n" +
-            "MATCH (n)-[activeSignalRels:PART_OF]->(cs), (n)-[:SIGNALLED_BY]->(comp:DataPipeline)\n" +
-            "WHERE EXISTS (activeSignalRels.activationTime)\n" +
-            "WITH cs, n as activatedSignal, numConnectedSignal, activeSignalRels.activationTime as actTime, comp.name as componentName\n" +
-            "MATCH ()-[r:PART_OF]->(cs)\n" +
-            "WHERE EXISTS (r.activationTime)\n" +
-            "WITH cs, activatedSignal, numConnectedSignal, actTime, componentName, count(r) as numActiveComponents\n" +
-            "MATCH (cs)\n" +
-            "WITH cs, activatedSignal, numConnectedSignal, actTime, componentName, numActiveComponents\n" +
-            "WHERE toInteger(ceil(cs.activationThreshold * numConnectedSignal)) <= numActiveComponents\n" +
+            "WITH s " +
+            "MATCH rels = ((s)-[:PART_OF]->(cs:CompositeSignal)) " +
+            "FOREACH (r IN relationships(rels) | SET r.activationTime=\$time ) " +
+            "WITH cs " +
+            "MATCH ()-[signalRels:PART_OF]->(cs) " +
+            "WITH cs, count(signalRels) as numConnectedSignal " +
+            "MATCH (n)-[activeSignalRels:PART_OF]->(cs), (n)-[:SIGNALLED_BY]->(comp:DataPipeline) " +
+            "WHERE EXISTS (activeSignalRels.activationTime) " +
+            "WITH cs, n as activatedSignal, numConnectedSignal, activeSignalRels.activationTime as actTime, comp.name as componentName " +
+            "MATCH ()-[r:PART_OF]->(cs) " +
+            "WHERE EXISTS (r.activationTime) " +
+            "WITH cs, activatedSignal, numConnectedSignal, actTime, componentName, count(r) as numActiveComponents " +
+            "MATCH (cs) " +
+            "WITH cs, activatedSignal, numConnectedSignal, actTime, componentName, numActiveComponents " +
+            "WHERE toInteger(ceil(COALESCE(cs.activationThreshold,\$defaultActivationThreshold) * numConnectedSignal)) <= numActiveComponents " +
             "RETURN cs {.*, activeSignals: collect(activatedSignal {.*, timestamp: actTime, pipelineComponent: componentName}), numOfConnectedSignals: numConnectedSignal}"
     }
 }

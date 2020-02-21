@@ -21,6 +21,8 @@ interface DAO {
 
     fun updateSignalAndGetActivatedCompositeSignals(signal: Signal): List<CompositeSignal>
 
+    fun resetSignalActivationForCompositeSignal(signals: List<Signal>, compositeSignal: CompositeSignal)
+
     fun findIncidentsOfCompositeSignal(compositeSignal: CompositeSignal): List<IncidentEntity>
 
     fun tearDown()
