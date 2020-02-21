@@ -129,12 +129,12 @@ CREATE (ApacheNifi)-[:IS]->(DataPipeline),
        (MQTT)-[:IS]->(DataPipeline),
        (Elasticsearch)-[:IS]->(DataPipeline),
        (HDFS)-[:IS]->(DataPipeline)
-CREATE (MQTT)-[:PREDECESSOR]->(ApacheNifi),
-       (MQTT)-[:PREDECESSOR]->(ApacheFlink),
-       (MQTT)-[:PREDECESSOR]->(NodeRed),
-       (ApacheFlink)-[:PREDECESSOR]->(Elasticsearch),
-       (ApacheNifi)-[:PREDECESSOR]->(HDFS),
-       (HDFS)-[:PREDECESSOR]->(ApacheSpark)
+CREATE (MQTT)-[:PREDECESSOR_OF]->(ApacheNifi),
+       (MQTT)-[:PREDECESSOR_OF]->(ApacheFlink),
+       (MQTT)-[:PREDECESSOR_OF]->(NodeRed),
+       (ApacheFlink)-[:PREDECESSOR_OF]->(Elasticsearch),
+       (ApacheNifi)-[:PREDECESSOR_OF]->(HDFS),
+       (HDFS)-[:PREDECESSOR_OF]->(ApacheSpark)
 
 CREATE (ApacheNifi)-[:BELONGSTO]->(DataLoadingPreprocessing),
        (ApacheNifi)-[:IS]->(ApplicationSoftware),
