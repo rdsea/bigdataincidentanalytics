@@ -21,14 +21,12 @@ import org.slf4j.LoggerFactory
  */
 class SignalProcessFunction(private val dao: DAO) : ProcessFunction<Signal, CompositeSignal>() {
 
-    private lateinit var log: Logger
-    private lateinit var sideOutputTag: OutputTag<Signal>
+    private val log: Logger by lazy { LoggerFactory.getLogger(SignalProcessFunction::class.java) }
+    private val sideOutputTag: OutputTag<Signal> by lazy { object : OutputTag<Signal>("side-output") {} }
 
     override fun open(parameters: Configuration?) {
         super.open(parameters)
         dao.initialize()
-        log = LoggerFactory.getLogger(SignalProcessFunction::class.java)
-        sideOutputTag = object : OutputTag<Signal>("side-output") {}
     }
 
     override fun processElement(value: Signal, ctx: Context, out: Collector<CompositeSignal>) {

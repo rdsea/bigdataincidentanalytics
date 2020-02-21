@@ -7,7 +7,9 @@ import io.github.rdsea.reasoner.domain.Incident
 import io.github.rdsea.reasoner.domain.IncidentEntity
 import io.github.rdsea.reasoner.domain.Signal
 import java.io.Serializable
+import org.neo4j.driver.AuthTokens
 import org.neo4j.driver.Driver
+import org.neo4j.driver.GraphDatabase
 import org.neo4j.driver.Record
 import org.neo4j.driver.Result
 import org.neo4j.driver.Values.parameters
@@ -26,13 +28,12 @@ import org.slf4j.LoggerFactory
  */
 class Neo4jDAO : DAO, Serializable {
 
+    private val log: Logger by lazy { LoggerFactory.getLogger(Neo4jDAO::class.java) }
     private lateinit var driver: Driver
-    private lateinit var log: Logger
     private lateinit var gson: Gson
 
     override fun initialize() {
-        driver = Main.getNeo4jDriver()
-        log = LoggerFactory.getLogger(Neo4jDAO::class.java)
+        driver = GraphDatabase.driver("bolt://neo4j:7687", AuthTokens.basic("neo4j", "test"))
         gson = Main.gson
     }
 

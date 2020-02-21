@@ -3,11 +3,13 @@ package io.github.rdsea.reasoner.source
 import com.google.gson.Gson
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
+import com.google.gson.reflect.TypeToken
 import io.github.rdsea.reasoner.Main
 import io.github.rdsea.reasoner.domain.Signal
 import io.github.rdsea.reasoner.domain.SignalType
 import io.github.rdsea.reasoner.util.LocalDateTimeJsonSerializer
 import java.lang.IllegalArgumentException
+import java.lang.reflect.Type
 import java.time.LocalDateTime
 import org.apache.flink.api.common.functions.RichMapFunction
 import org.apache.flink.configuration.Configuration
@@ -23,6 +25,7 @@ import org.apache.flink.configuration.Configuration
  */
 class KafkaRecordMapFunction : RichMapFunction<String, Signal>() {
 
+    private val genericMapType: Type by lazy { object : TypeToken<Map<String, Any>>() {}.type }
     private lateinit var gson: Gson
 
     override fun open(parameters: Configuration?) {
@@ -32,13 +35,17 @@ class KafkaRecordMapFunction : RichMapFunction<String, Signal>() {
 
     override fun map(value: String): Signal {
         val json: JsonObject = gson.fromJson(value, JsonElement::class.java).asJsonObject
-        if (!json.has("signal_type")) {
-            throw IllegalArgumentException("\"Kafka record doesn't contain required field \\\"signal_type\\\"!\"")
-        }
+        checkPreConditions(json)
         return when (val signalType = json["signal_type"].asString) {
             SignalType.LOG.name -> parseLogSignal(json)
             SignalType.PROMETHEUS_ALERT.name -> parsePrometheusSignal(json)
             else -> throw IllegalArgumentException("Unsupported signal type \"$signalType\" in Kafka record")
+        }
+    }
+
+    private fun checkPreConditions(record: JsonObject) {
+        if (!record.has("signal_type")) {
+            throw IllegalArgumentException("\"Kafka record doesn't contain required field \\\"signal_type\\\"!\"")
         }
     }
 
@@ -50,7 +57,7 @@ class KafkaRecordMapFunction : RichMapFunction<String, Signal>() {
             pipelineComponent = jsonObject["pipeline_component"].asString,
             summary = jsonObject["message"].asString
         )
-        val details = gson.fromJson<Map<String, Any>>(jsonObject, Main.genericMapType).toMutableMap()
+        val details = gson.fromJson<Map<String, Any>>(jsonObject, genericMapType).toMutableMap()
         details.remove("signal_type")
         details.remove("tag")
         details.remove("event_time")
@@ -74,8 +81,8 @@ class KafkaRecordMapFunction : RichMapFunction<String, Signal>() {
         labels.remove("pipeline_component")
         annotations.remove("summary")
         result.details = mapOf(
-            "labels" to gson.fromJson<Map<String, Any>>(labels, Main.genericMapType),
-            "annotations" to gson.fromJson<Map<String, Any>>(annotations, Main.genericMapType)
+            "labels" to gson.fromJson<Map<String, Any>>(labels, genericMapType),
+            "annotations" to gson.fromJson<Map<String, Any>>(annotations, genericMapType)
         )
         return result
     }

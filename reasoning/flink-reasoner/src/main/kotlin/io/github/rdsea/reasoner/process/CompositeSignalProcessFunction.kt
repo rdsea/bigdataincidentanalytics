@@ -24,12 +24,11 @@ import org.slf4j.LoggerFactory
  */
 class CompositeSignalProcessFunction(private val dao: DAO) : ProcessFunction<CompositeSignal, Incident>() {
 
-    private lateinit var log: Logger
+    private val log: Logger by lazy { LoggerFactory.getLogger(CompositeSignalProcessFunction::class.java) }
 
     override fun open(parameters: Configuration?) {
         super.open(parameters)
         dao.initialize()
-        log = LoggerFactory.getLogger(SignalProcessFunction::class.java)
     }
 
     override fun processElement(compositeSignal: CompositeSignal, ctx: Context, out: Collector<Incident>) {
