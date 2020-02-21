@@ -33,26 +33,36 @@ class CompositeSignalProcessFunction(private val dao: DAO) : ProcessFunction<Com
     }
 
     override fun processElement(compositeSignal: CompositeSignal, ctx: Context, out: Collector<Incident>) {
-        val sortedSignals = compositeSignal.activeSignals.sortedByDescending { it.timestamp }
+        val sortedSignals = compositeSignal.activeSignalsSorted
+        val mostRecentSignal = compositeSignal.activeSignalsSorted.first()
         val minRequiredActiveSignals = ceil(abs(compositeSignal.activationThreshold * compositeSignal.numOfConnectedSignals)).toInt()
         // invariant: minRequiredSignals is guaranteed to be at least 1 or at most compositeSignal.numOfConnectedSignals
-        if (areSignalsWithinTimeWindow(sortedSignals[0], sortedSignals[minRequiredActiveSignals - 1], compositeSignal.coolDownSec)) {
+        if (areSignalsWithinTimeWindow(mostRecentSignal, sortedSignals[minRequiredActiveSignals - 1], compositeSignal.coolDownSec)) {
             // at this point there will be a generated Incident report, because there are (at least) minRequiredActiveSignals
             // within time window defined by coolDownSec
             var indexOfInclusion = minRequiredActiveSignals
             if (minRequiredActiveSignals < sortedSignals.size) {
                 // means that there may be more, older, activated signals potentially within the time window, need to check
                 while (indexOfInclusion < sortedSignals.size &&
-                    areSignalsWithinTimeWindow(sortedSignals[0], sortedSignals[indexOfInclusion], compositeSignal.coolDownSec)
+                    areSignalsWithinTimeWindow(mostRecentSignal, sortedSignals[indexOfInclusion], compositeSignal.coolDownSec)
                 ) {
                     indexOfInclusion++
                 }
             }
-            compositeSignal.activeSignals = sortedSignals.take(indexOfInclusion)
+            // this is a crucial step: when building incident reports, we want to include only those active signals,
+            // which are indeed within the CompositeSignal's time window. Therefore we only propagate up to
+            // indexOfInclusion amount of signals. SIDE NOTE: the correct OOP approach would be to create a new CompositeSignal
+            // object with the reduced activeSignalsSorted list to adhere immutability. Here however, we give this up in favor
+            // of performance (reduce Flink's object serialization etc.).
+            compositeSignal.activeSignalsSorted = sortedSignals.take(indexOfInclusion)
             buildIncidents(compositeSignal)
                 .forEach { out.collect(it) }
         } else {
-            log.debug("CS \"${compositeSignal.name}\" not fired. Signal 0 and signal ${minRequiredActiveSignals - 1} outside ${compositeSignal.coolDownSec}s time window: [${sortedSignals[0].timestamp}, ${sortedSignals[minRequiredActiveSignals - 1].timestamp}]")
+            log.info("CS \"${compositeSignal.name}\" not fired. Most recent signal and signal at position ${minRequiredActiveSignals - 1} outside ${compositeSignal.coolDownSec}s time window: [${sortedSignals[0].timestamp}, ${sortedSignals[minRequiredActiveSignals - 1].timestamp}]")
+            val signalsToReset = sortedSignals
+                .filter { !areSignalsWithinTimeWindow(mostRecentSignal, it, compositeSignal.coolDownSec) }
+                .toList()
+            dao.resetSignalActivationForCompositeSignal(signalsToReset, compositeSignal)
         }
     }
 
@@ -64,7 +74,7 @@ class CompositeSignalProcessFunction(private val dao: DAO) : ProcessFunction<Com
         return dao
             .findIncidentsOfCompositeSignal(compositeSignal)
             .map {
-                Incident(it.name, compositeSignal.activeSignals[0].timestamp, compositeSignal)
+                Incident(it.name, compositeSignal.activeSignalsSorted.first().timestamp, compositeSignal)
             }
     }
 

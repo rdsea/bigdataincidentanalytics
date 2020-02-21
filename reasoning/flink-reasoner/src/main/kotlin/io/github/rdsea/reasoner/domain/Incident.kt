@@ -19,12 +19,13 @@ data class Incident(
 ) : Serializable {
 
     private val summary = "Incident \"${this.name}\" is active! " +
-        "It is indicated by ${this.compositeSignal.activeSignals.size} signal(s)."
-    private val participatingComponents = compositeSignal.activeSignals
+        "It is indicated by ${this.compositeSignal.activeSignalsSorted.size} signal(s)."
+    private val participatingComponents = compositeSignal.activeSignalsSorted
         .map { it.pipelineComponent }
         .distinct()
 
     companion object {
+        const val RE_NOTIFICATION_WAIT_SEC = 120 // for this amount of seconds the same Incident won't be reported twice
         private const val serialVersionUID = 20180617104402L
     }
 }

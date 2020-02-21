@@ -71,7 +71,7 @@ class Main {
                 .map(SignalToRecordingMapFunction()).name("SignalToRecordingMapFunction")
 
             CassandraSink.addSink(sideOutput)
-                .setHost("cassandra")
+                .setHost(args[4])
                 .setMapperOptions { arrayOf<Mapper.Option>(Mapper.Option.saveNullFields(false)) }
                 .build().name("CassandraSink")
 
@@ -83,8 +83,8 @@ class Main {
         }
 
         private fun checkArgs(args: Array<String>) {
-            if (args.size != 4) {
-                throw IllegalArgumentException("There must be exactly 4 arguments: <BROKERS> <GROUP_ID> <TOPIC> <ELASTICSEARCH_URI>")
+            if (args.size != 5) {
+                throw IllegalArgumentException("There must be exactly 5 arguments: <BROKERS> <GROUP_ID> <TOPIC> <ELASTICSEARCH_URI> <CASSANDRA_HOST>")
             }
         }
 

@@ -9,8 +9,6 @@ import io.github.rdsea.reasoner.domain.SignalType
 import io.github.rdsea.reasoner.util.LocalDateTimeJsonSerializer
 import java.lang.IllegalArgumentException
 import java.time.LocalDateTime
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
 import org.apache.flink.api.common.functions.RichMapFunction
 import org.apache.flink.configuration.Configuration
 
@@ -26,13 +24,10 @@ import org.apache.flink.configuration.Configuration
 class KafkaRecordMapFunction : RichMapFunction<String, Signal>() {
 
     private lateinit var gson: Gson
-    private lateinit var prometheusFormatter: DateTimeFormatter
 
     override fun open(parameters: Configuration?) {
         super.open(parameters)
         gson = Main.gson
-        prometheusFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSSSSS'Z'")
-            .withZone(ZoneId.systemDefault())
     }
 
     override fun map(value: String): Signal {
@@ -71,7 +66,7 @@ class KafkaRecordMapFunction : RichMapFunction<String, Signal>() {
         val result = Signal(
             type = SignalType.PROMETHEUS_ALERT,
             name = labels["alertname"].asString,
-            timestamp = LocalDateTime.parse(jsonObject["startsAt"].asString, prometheusFormatter),
+            timestamp = LocalDateTime.parse(jsonObject["startsAt"].asString.dropLast(1)),
             pipelineComponent = labels["pipeline_component"].asString,
             summary = annotations["summary"].asString
         )

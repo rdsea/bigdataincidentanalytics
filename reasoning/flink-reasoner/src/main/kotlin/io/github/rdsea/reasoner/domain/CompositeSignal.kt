@@ -1,5 +1,7 @@
 package io.github.rdsea.reasoner.domain
 
+import com.google.gson.annotations.SerializedName
+
 /**
  * <h4>About this class</h4>
  *
@@ -11,8 +13,14 @@ package io.github.rdsea.reasoner.domain
  */
 data class CompositeSignal(
     var name: String = "",
-    var coolDownSec: Int = 3600, // set default to 1 hour
-    var activationThreshold: Double = 1.0,
+    var coolDownSec: Int = DEFAULT_COOL_DOWN_SEC,
+    var activationThreshold: Double = DEFAULT_ACTIVATION_THRESHOLD,
     var numOfConnectedSignals: Int = 1,
-    var activeSignals: List<Signal> = emptyList()
-)
+    @SerializedName("activeSignals")
+    var activeSignalsSorted: List<Signal> = emptyList()
+) {
+    companion object {
+        const val DEFAULT_ACTIVATION_THRESHOLD = 1.0 // default is 100%, i.e. all connected signals must fire
+        const val DEFAULT_COOL_DOWN_SEC = 60 // default is 1 minute
+    }
+}
