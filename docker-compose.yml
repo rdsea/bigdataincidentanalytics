@@ -185,8 +185,11 @@ services:
   ##### Node-RED #####
   nodered:
     build: pipeline/nodered
+    container_name: nodered
     ports:
       - 1880:1880
+    expose:
+      - 1881
     networks:
       - iot-big-data
       - pipeline

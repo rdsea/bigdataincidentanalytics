@@ -17,6 +17,17 @@
 // The `https` setting requires the `fs` module. Uncomment the following
 // to make it available:
 //var fs = require("fs");
+const express = require('express');
+const server = express();
+const client = require('prom-client');
+const register = client.register;
+server.get('/metrics', (req, res) => {
+    res.set('Content-Type', register.contentType);
+    res.end(register.metrics());
+});
+const collectDefaultMetrics = client.collectDefaultMetrics;
+collectDefaultMetrics({ timeout: 5000 });
+server.listen(1881);
 
 module.exports = {
     // the tcp port that the Node-RED web server is listening on
@@ -181,6 +192,11 @@ module.exports = {
     //    next();
     //},
 
+    // The following property can be used to pass custom options to the Express.js
+    // server used by Node-RED. For a full list of available options, refer
+    // to http://expressjs.com/en/api.html#app.settings.table
+    //httpServerOptions: { },
+
     // The following property can be used to verify websocket connection attempts.
     // This allows, for example, the HTTP request headers to be checked to ensure
     // they include valid authentication information.
@@ -213,7 +229,8 @@ module.exports = {
         // j5board:require("johnny-five").Board({repl:false})
         FluentLogger:require('fluent-logger'),
         Cloudevent:require("cloudevents-sdk/v03"),
-        uuidv4:require('uuid/v4')
+        uuidv4:require('uuid/v4'),
+        prometheus:require('prom-client')
     },
 
     // Context Storage
