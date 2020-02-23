@@ -183,8 +183,10 @@ services:
       APP_CASSANDRA_HOST: cassandra
       APP_ELASTICSEARCH_HOST: elasticsearch
       APP_ELASTICSEARCH_PORT: 9200
+      APP_WINDOW_DURATION: 1 minute
+      APP_SLIDE_DURATION: 15 seconds
       APP_FP_MIN_SUPPORT: 0.1
-      APP_FP_MIN_CONFIDENCE: 0.5
+      APP_FP_MIN_CONFIDENCE: 0.3
     volumes:
       - $ETC_LOCALTIME:/etc/localtime:ro
       - ./reasoning/pattern-analysis/build/libs/pattern-analysis-1.0-SNAPSHOT-all.jar:/spark/pattern-analysis-1.0-SNAPSHOT-all.jar
