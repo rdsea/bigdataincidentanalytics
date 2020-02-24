@@ -25,18 +25,18 @@ This document describes the core ideas and components that can be used in order 
     + [Simplified summary](#simplified-summary)
     + [Pipeline at a glance](#pipeline-at-a-glance)
       - [Note on modularity](#note-on-modularity)
-    + [Log Collection: [Fluentd](https://www.fluentd.org/) ![Fluentd](https://avatars3.githubusercontent.com/u/859518?s=25&v=4)](#log-collection---fluentd--https---wwwfluentdorg-----fluentd--https---avatars3githubusercontentcom-u-859518-s-25-v-4-)
+    + [Log Collection: [Fluentd](https://www.fluentd.org/) ![Fluentd](https://avatars3.githubusercontent.com/u/859518?s=25&v=4)](#log-collection-fluentd-)
       - [How to collect logs](#how-to-collect-logs)
       - [The role of tags](#the-role-of-tags)
       - [How to capture signals](#how-to-capture-signals)
       - [Where to forward logs](#where-to-forward-logs)
-    + [Metric Collection and Alerting: [Prometheus](https://prometheus.io/) ![Prometheus](https://avatars1.githubusercontent.com/u/3380462?s=25&v=4)](#metric-collection-and-alerting---prometheus--https---prometheusio-----prometheus--https---avatars1githubusercontentcom-u-3380462-s-25-v-4-)
-    + [Reliable Signal Collector: [Kafka](https://kafka.apache.org/) Pub/Sub <img src="https://images.safe.com/logos/formats/apache-kafka_100.png" alt="Kafka" width="25" />](#reliable-signal-collector---kafka--https---kafkaapacheorg---pub-sub--img-src--https---imagessafecom-logos-formats-apache-kafka-100png--alt--kafka--width--25----)
-    + [Prometheus->Kafka Bridge: Ingestion-Service by [Nest.js](https://nestjs.com/) ![Nestjs](https://avatars1.githubusercontent.com/u/28507035?s=25&v=4)](#prometheus--kafka-bridge--ingestion-service-by--nestjs--https---nestjscom-----nestjs--https---avatars1githubusercontentcom-u-28507035-s-25-v-4-)
-    + [Scalable Signal Reasoning: [Flink](https://flink.apache.org/) Reasoner Job <img src="https://sau.nobleprog.com/sites/hitrahr/files/category_images/height100_scale/apache_flink_training.png?t=f7fdbae1" alt="Flink" width="25" />](#scalable-signal-reasoning---flink--https---flinkapacheorg---reasoner-job--img-src--https---saunobleprogcom-sites-hitrahr-files-category-images-height100-scale-apache-flink-trainingpng-t-f7fdbae1--alt--flink--width--25----)
-    + [Dynamic Incident and Signal Knowledge Graph: [Neo4j](https://neo4j.com/) ![Neo4j](https://avatars1.githubusercontent.com/u/201120?s=25&v=4)](#dynamic-incident-and-signal-knowledge-graph---neo4j--https---neo4jcom-----neo4j--https---avatars1githubusercontentcom-u-201120-s-25-v-4-)
-    + [Long-term Storage of Recorded Signals: [Cassandra](https://cassandra.apache.org/) <img src="https://a.fsdn.com/allura/s/apache-cassandra/icon?1554403225?&amp;w=90" width="25" />](#long-term-storage-of-recorded-signals---cassandra--https---cassandraapacheorg----img-src--https---afsdncom-allura-s-apache-cassandra-icon-1554403225--amp-w-90--width--25----)
-    + [Frequent-Pattern Mining: [Spark](https://spark.apache.org/) <img src="https://images.vogel.de/vogelonline/bdb/1596200/1596255/33.jpg" alt="Spark" width="25" />](#frequent-pattern-mining---spark--https---sparkapacheorg----img-src--https---imagesvogelde-vogelonline-bdb-1596200-1596255-33jpg--alt--spark--width--25----)
+    + [Metric Collection and Alerting: [Prometheus](https://prometheus.io/) ![Prometheus](https://avatars1.githubusercontent.com/u/3380462?s=25&v=4)](#metric-collection-and-alerting-prometheus-)
+    + [Reliable Signal Collector: [Kafka](https://kafka.apache.org/) Pub/Sub <img src="https://images.safe.com/logos/formats/apache-kafka_100.png" alt="Kafka" width="25" />](#reliable-signal-collector-kafka-pubsub-)
+    + [Prometheus->Kafka Bridge: Ingestion-Service by [Nest.js](https://nestjs.com/) ![Nestjs](https://avatars1.githubusercontent.com/u/28507035?s=25&v=4)](#prometheus-kafka-bridge-ingestion-service-by-nestjs-)
+    + [Scalable Signal Reasoning: [Flink](https://flink.apache.org/) Reasoner Job <img src="https://sau.nobleprog.com/sites/hitrahr/files/category_images/height100_scale/apache_flink_training.png?t=f7fdbae1" alt="Flink" width="25" />](#scalable-signal-reasoning-flink-reasoner-job-)
+    + [Dynamic Incident and Signal Knowledge Graph: [Neo4j](https://neo4j.com/) ![Neo4j](https://avatars1.githubusercontent.com/u/201120?s=25&v=4)](#dynamic-incident-and-signal-knowledge-graph-neo4j-)
+    + [Long-term Storage of Recorded Signals: [Cassandra](https://cassandra.apache.org/) <img src="https://a.fsdn.com/allura/s/apache-cassandra/icon?1554403225?&amp;w=90" width="25" />](#long-term-storage-of-recorded-signals-cassandra-)
+    + [Frequent-Pattern Mining: [Spark](https://spark.apache.org/) <img src="https://images.vogel.de/vogelonline/bdb/1596200/1596255/33.jpg" alt="Spark" width="25" />](#frequent-pattern-mining-spark-)
     + [Minimum Deployment View (Docker)](#minimum-deployment-view--docker--1)
   * [Limitations](#limitations)
   * [Potential Improvements](#potential-improvements)
@@ -54,7 +54,7 @@ In this document we provide a potential strategy with concrete tools and impleme
 
 From now on *pipeline* refers to the examplery Big Data pipeline which requires monitoring and detection of incidents. The image below shows the structure of the pipeline and the flow of data.
 
-![Big Data Pipeline Abstract Overview](documents/images/Pipeline Simple Overview.png)
+![Big Data Pipeline Abstract Overview](https://raw.githubusercontent.com/rdsea/bigdataincidentanalytics/reasoning/documents/images/Pipeline%20Simple%20Overview.png)
 
 Next, we will describe the function of each pipeline component. **Important note**: beware, that most of these components must be deployed in a cluster consisting of multiple containers. The image above does not reflect the deployment view, it is merely an abstraction.
 
@@ -147,7 +147,7 @@ Apart from their usual responsibilities, these two components are present in ord
 
 The [docker-compose.yml](docker-compose.yml) file contains all the definitions of services/containers that are required in order to run the reference pipeline. Only the Elasticsearch and Kibana services are not defined in this file, because they are also part of the monitoring pipeline (their definitions can be found in  [docker-compose.monitoring.yml](docker-compose.monitoring.yml). Please note that some of the services are meant to be scaled horizontally. Below  a diagram is shown, containing the minimum amount of containers.
 
-![Reference Pipeline Deployment View](documents/images/Pipeline Deployment View.png)
+![Reference Pipeline Deployment View](https://raw.githubusercontent.com/rdsea/bigdataincidentanalytics/reasoning/documents/images/Pipeline%20Deployment%20View.png)
 
 ## Concepts and Terminology
 
@@ -201,7 +201,7 @@ Ignoring the specific chosen tools, the whole process can be summarized into the
 
 The image below illustrates the monitoring/reasoning pipeline. In the following, we will describe each component's purpose and requirements in detail.
 
-![Monitoring Pipeline](documents/images/Monitoring Pipeline Overview.png)
+![Monitoring Pipeline](https://raw.githubusercontent.com/rdsea/bigdataincidentanalytics/reasoning/documents/images/Monitoring%20Pipeline%20Overview.png)
 
 #### Note on modularity
 
