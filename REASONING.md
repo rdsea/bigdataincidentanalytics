@@ -201,7 +201,7 @@ Ignoring the specific chosen tools, the whole process can be summarized into the
 
 The image below illustrates the monitoring/reasoning pipeline. In the following, we will describe each component's purpose and requirements in detail.
 
-![Monitoring Pipeline](https://raw.githubusercontent.com/rdsea/bigdataincidentanalytics/reasoning/documents/images/Monitoring%20Pipeline%20Overview.png)
+![Monitoring Pipeline](https://raw.githubusercontent.com/rdsea/bigdataincidentanalytics/reasoning/documents/images/MonitoringPipelineOverview.png)
 
 #### Note on modularity
 
