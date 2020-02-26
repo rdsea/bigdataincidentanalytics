@@ -207,6 +207,78 @@ The image below illustrates the monitoring/reasoning pipeline. In the following,
 
 While the pipeline may seem unreasonably fragmented, this is not a side effect. As stated earlier, an important goal is to uphold a high degree of independence when it comes to tooling, because most companies already have some sort of monitoring procedures in place. With this architecture and minimal requirements, it should be fairly easy to swap out specific tools with preferred ones fulfilling the same purposes. In each component's description below, we will provide a reason for picking the tool as well as other alternatives.
 
+### Structure of a Signal
+
+As already introduced, a Signal is any event that is marked or emitted as important to capture. These Signals are later processed by a Flink-based job, therefore there are some necessary bits of information assumed for each one. Currently, 2 types of JSON-formatted Signals are supported: 
+
+* Signals represented as logs: any log collected centrally by Fluentd marked as Signal
+* Signals represented as Prometheus alerts: any defined Prometheus alert
+
+ Whether the incoming Signal is parsed from a log or a Prometheus alert depends on the top-level attribute `signalType: "<SIGNAL_TYPE>"` which can be either `LOG` or `PROMETHEUS_ALERT`.
+
+#### Example: Log-based Signal JSON
+
+The absolute *minimum* required fields are shown below. Please note the decider property `signal_type` at the beginning:
+
+```json
+{
+  "signal_type": "LOG",
+  "tag": "signal.MqttConnectionError",
+  "pipeline_component": "NIFI",
+  "event_time": "2020-02-21T21:30:09.791000000Z",
+  "message": "ConsumeMQTT[id=74042ed4-c995-3baa-744b-fab0653c5533] Connection to tcp://mqtt:1883 lost (or was never connected) and connection failed. Yielding processor: MqttException (0) - java.net.UnknownHostException: mqtt"
+}
+```
+
+The above JSON is just an excerpt of a typical Signal log. Since logs can have many more arbitrary fields and objects, there are no restrictions on them. Additional properties are parsed as a `details: [object]` property, which holds a key-value map of all the additional fields and values.
+
+#### Example: Prometheus Alert-based Signal JSON
+
+Similarly to the log-based example, the JSON below shows an excerpt of a common Prometheus alert representing the required attributes.
+
+```json
+{
+  "signal_type": "PROMETHEUS_ALERT",
+  "labels": {
+    "alertname": "NotReceivingSensorData",
+    "pipeline_component": "NODE-RED"
+  },
+  "annotations": {
+    "summary": "Instance nodered:1881 is not receiving sensor data"
+  },
+  "startsAt": "2020-02-20T18:53:41.18011468Z"
+}
+```
+
+The complete alert object may look like this:
+
+```json
+{
+  "signal_type": "PROMETHEUS_ALERT",
+  "status": "firing",
+	"labels": {
+    "alertname": "NotReceivingSensorData",
+    "pipeline_component": "NODE-RED",
+    "instance": "nodered:1881",
+    "job": "node-red",
+    "severity": "critical"
+  },
+  "annotations": {
+    "summary": "Instance nodered:1881 is not receiving sensor data",
+    "description": "nodered:1881 of job node-red has not been receiving any sensor data from the MQTT broker for the last 30 seconds.",
+  },
+  "startsAt": "2020-02-20T18:53:41.18011468Z",
+  "endsAt": "0001-01-01T00:00:00Z",
+  "generatorURL": "http://ad459e008c77:9090/graph?g0.expr=increase%28mqtt_received_data_packets_total%7Bjob%3D%22node-red%22%7D%5B30s%5D%29+%3D%3D+0&g0.tab=1"
+}
+```
+
+Every additional, arbitrary, non-required key-value pairs inside `labels` and `annotations` are dynamically collected for later reporting.
+
+Please refer to the [official Prometheus documentation](https://prometheus.io/docs/alerting/configuration/#webhook_config) and to the section about the ingestion-service for more information about the structure of Prometheus alerts.
+
+If you're interested in how a Signal is represented in the Knowledge Graph and in the Reasoner component, please head over to the respective section.
+
 ### Log Collection: [Fluentd](https://www.fluentd.org/) ![Fluentd](https://avatars3.githubusercontent.com/u/859518?s=25&v=4)
 
 **Goal**: centralize logs of each participating component and of each layer in a structured, JSON-format.
@@ -223,9 +295,9 @@ How log data gets into Fluentd very much depends on the amount of control one ha
 
   ```yaml
   logging:
-  	driver: fluentd
+    driver: fluentd
     options:
-    	fluentd-address: localhost:24224
+      fluentd-address: localhost:24224
       tag: com.rdsea.sensor.{{.ID}}.platform
       fluentd-sub-second-precision: "true"
   ```
@@ -237,27 +309,27 @@ How log data gets into Fluentd very much depends on the amount of control one ha
   ```xml
   <appender name="FLUENCY_SYNC" class="ch.qos.logback.more.appenders.FluencyLogbackAppender">
     <!-- The tag each log record will get. Here, the tag value is externalized as an environment variable. -->
-          <tag>${LOG_COMPONENT_TAG}</tag>
+    <tag>${LOG_COMPONENT_TAG}</tag>
   
-          <!-- Host name/address and port number which Flentd placed -->
-          <remoteHost>fluentd</remoteHost>
-          <port>24224</port>
+    <!-- Host name/address and port number which Flentd placed -->
+    <remoteHost>fluentd</remoteHost>
+    <port>24224</port>
   
-          <!-- [Optional] Additional fields(Pairs of key: value) -->
-          <!--<additionalField>
-              <key>key</key>
-              <value>value</value>
-          </additionalField>-->
+     <!-- [Optional] Additional fields(Pairs of key: value) -->
+     <!--<additionalField>
+     <key>key</key>
+     <value>value</value>
+     </additionalField>-->
   
-          <flushIntervalMillis>1200</flushIntervalMillis>
-          <useEventTime>true</useEventTime>
-          <sslEnabled>false</sslEnabled>
-          <flattenMapMarker>false</flattenMapMarker>
+     <flushIntervalMillis>1200</flushIntervalMillis>
+     <useEventTime>true</useEventTime>
+     <sslEnabled>false</sslEnabled>
+     <flattenMapMarker>false</flattenMapMarker>
   
-          <encoder>
-              <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{60} %X{sourceThread} - %msg%n</pattern>
-          </encoder>
-      </appender>
+     <encoder>
+          <pattern>%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{60} %X{sourceThread} - %msg%n</pattern>
+     </encoder>
+  </appender>
   ```
 
   For NPM-based applications, such as Node-RED there is a [fluent-logger](https://www.npmjs.com/package/fluent-logger) NPM package which can be leveraged to output any platform logs to a remote Fluentd instance.
@@ -266,30 +338,226 @@ How log data gets into Fluentd very much depends on the amount of control one ha
 
 #### The role of tags
 
-tbd
+Upon careful inspection of Fluentd it can be observed that tagging of logs is an essential component of it. Every incoming event in Fluentd needs to have a `tag` property. It is this attritbute that one needs to rely on when defining `filter` and `match` directives (see [configruation](logging/fluentd/conf/fluent.conf) for concrete examples). 
 
-#### How to capture signals
+Moreover, **the value of an event's tag decides whether it is handled as a Signal or not**. In other words, the `tag` property is the way to *annotate* log-based events and mark them as signals. The format is defined as follows:
 
-tbd
+`tag: "**.signal.<SIGNAL_NAME>"`
 
-* for concrete, user-defined signals on the application-layer (e.g. incomplete data detected), the `signal.<SIGNAL_NAME>` part should be included in the tag when emitting the log. This way, the log will be immediately forwarded to Kafka
-* for logs which are emitted by the platform as-is, special regex-rules should be defined. For example,if we find a specific platform log to be of significance, we can capture it using a regex pattern and replace its tag with `signal.<SIGNAL_NAME>`.
+The tag can contain any other parts (separeted by dots) up to `signal`. The part **after** `signal` stands for the name of the signal. The name part is crucial, because a Signal is uniquely identified by its name and the pipeline component it belongs to. Valid examples:
+
+* `tag: "signal.MqttStartupLog"`
+* `tag: "com.rdsea.mqtt.signal.MqttStartupLog"`
+* `tag: "com.rdsea.flink.app.signal.RedundantData"`
+
+Additionally, `tag` should contain the name of the pipeline component it is emitted from (e.g. mqtt, flink, nifi) and also an indication of the layer (e.g. platform, app). These are required for filtering and setting properties automatically within Fluentd. To illustrate this, the following is an excerpt from the monitoring pipeline's Fluentd configuration:
+
+```
+# This filter gets activated for every record that contains "nodered" somewhere in the tag property
+<filter **.nodered.**>
+  @type record_modifier
+  <record>
+    # For each matched record we add the "pipeline_component" key with "NODE-RED" as value
+    pipeline_component NODE-RED
+  </record>
+</filter>
+```
+
+#### How to capture log-based signals 
+
+If the application-layer can be controlled/updated, then the recommended way is to integrate the Fluentd SDK and emit the desired events with it. Furthermore, we encourage to utilize a consistent way of reporting signals from this layer, adhering the [CloudEvents](https://github.com/cloudevents/spec) specification. This part is optional as long as the signals are properly JSON-formatted, consistent across components and have a `tag` property required by Fluentd. We recommend CloudEvents (please refer to the [specification](https://github.com/cloudevents/spec/blob/v1.0/spec.md)) as it is vendor-neutral and its structure promotes flexibility. Example event:
+
+```json
+{
+    "specversion" : "1.0",
+    "type" : "com.github.pull.create",
+    "source" : "https://github.com/cloudevents/spec/pull",
+    "subject" : "123",
+    "id" : "A234-1234-1234",
+    "time" : "2018-04-05T17:31:00Z",
+    "comexampleextension1" : "value",
+    "comexampleothervalue" : 5,
+    "datacontenttype" : "text/xml",
+    "data" : "<much wow=\"xml\"/>"
+}
+```
+
+This may seem too much at first, however only the fields `id`, `source`, `specversion` and `type` are mandatory. The rest (and potentially more) is up to the individual requirements.
+
+Since such `CloudEvents` are essentially JSON objects, one can simply build them manually. At the same time there are [SDKs](https://github.com/cloudevents/spec#sdks) for several programming languages so that the writing of such objects are made easier.
+
+As an illustration, in the Node-RED component it would be possible to signal the missing time information of sensor data that otherwise would be critical using a `function` node:
+
+```javascript
+const FluentLogger = context.global.get('FluentLogger'); // Flutentd SDK
+const EventTime = FluentLogger.EventTime;
+const Cloudevent = context.global.get('Cloudevent'); // CloudEvent SDK (optional)
+const uuidv4 = context.global.get('uuidv4');
+
+if(!msg.payload.hasOwnProperty('time')) {
+    let date = new Date();
+  
+    let event = Cloudevent
+    .event()
+    .type("com.rdsea.nodered.mqtt.app.signal.MissingTimeInformation")
+    .source(`Node-Red/Sensor-Data-Flow/nodes/${node.name}-${node.id}`)
+    .id(uuidv4())
+    .time(date) 
+    .data(msg.payload) // you may append the data if necessary
+    .subject(`${msg.payload.device_id}`)
+    .addExtension("message",'Sensor data is missing time information!');
+
+    // the first parameter tells FluentLogger what to use as `tag`
+    FluentLogger.emit('mqtt.app.signal.MissingTimeInformation', event.spec.payload, EventTime.fromDate(date));
+    return null; // return null, thus halting the flow
+} 
+
+// perform additional checks depending on the use-case
+// whenever we encounter an issue, the function should automatically return null,
+// i.e. not propagating the (faulty) payload.
+
+return msg;
+```
+
+There are situations where it is infeasible to use a library to push logs to Fluentd. For these cases Flutentd can be configured to accept JSON records via HTTP, essentially enabling components to simply post their logs via a conventional HTTP call:
+
+```
+# Makes Fluentd accept records at port 9880
+<source>
+  @type http
+  port 9880
+  bind 0.0.0.0
+  cors_allow_origins ["*"]
+  <parse>
+    @type json
+    time_key time
+    keep_time_key true
+    time_type string
+    time_format %Y-%m-%dT%H:%M:%S.%NZ
+  </parse>
+</source>
+```
+
+For example, in Apache NiFi it would require substantial effort to integrate the Fluentd SDK. As a workaround, user-level signals can be pushed to Fluentd through the described HTTP channel. The following shows the contents of an `ExecuteScript` Processor (with `Script Engine` set to `Groovy`) that generates and forwards a JSON string:
+
+```groovy
+import groovy.json.JsonSlurper
+import groovy.json.JsonBuilder
+import groovy.json.JsonOutput
+
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
+
+def ff = session.get()
+if(!ff)return
+ff = session.write(ff, {rawIn, rawOut->
+    rawIn.withReader("UTF-8"){reader->
+        rawOut.withWriter("UTF-8"){writer->
+            def slurper = new JsonSlurper() as Object
+            def mqttPayload = slurper.parse(reader)
+            def cloudEvent = JsonOutput.toJson([
+                    specversion: '0.3',
+                    id: UUID.randomUUID().toString(),
+                    type: "com.rdsea.nifi.mqtt.app.signal.IncompleteSensorData",
+                    source: "NiFi Flow/processor/ConsumeMQTT",
+                    time: ZonedDateTime.now()
+                            .format(DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")),
+                    subject: "${mqttPayload.device_id}-${mqttPayload.time}",
+                    message: "Sensor record is incomplete!"
+            ])
+            def resultJson = slurper.parseText(cloudEvent)
+            new JsonBuilder(resultJson).writeTo(writer)
+        }
+    }
+} as StreamCallback)
+ff = session.putAttribute(ff, "FLUENTD_TAG", "com.rdsea.nifi.mqtt.app.signal.IncompleteSensorData")
+session.transfer(ff, REL_SUCCESS)
+```
+
+Please note the line second to last. The value of `FLUENTD_TAG` is stored as a session attribute in the resulting `FlowFile`. This value is subsequently used in an `InvokeHTTP` Processor. For a better understanding, the image below shows how these two Processors are set up in NiFi.
+
+![NiFi Signal to Fluentd via HTTP](documents/images/NiFi_Signal_To_Fluentd_1.png)
+
+For completeness, here is how the `InvokeHTTP` Processor is configured:
+
+![NiFi Signal to Fluentd InvokeHTTP](documents/images/NiFi_Signal_To_Fluentd_2.png)
+
+Note the usage of the attribute `FLUENTD_TAG`. What this node does is making an HTTP POST request to the remote URL with the JSON content we built in the processor before.
+
+Up to this point we've covered how application-layer, log-based Signals can be captured. There may be however complex incidents that require the capture of logs which are emitted by the infrastructure or the platform and therefore cannot be altered. For this task, pattern-based matching is required. In Fluentd's configuration a so-called `rewrite_tag_filter` plugin can be leveraged. As an example, suppose that we would like to mark the connection failure to the MQTT Broker in NiFi as a Signal. This can be achieved with the following configuration:
+
+```
+<match **.nifi.platform**>
+  @type rewrite_tag_filter
+  <rule>
+    key message
+    pattern /^ConsumeMQTT\[.*\] Connection to tcp:\/\/[^\s]+ lost .*$/
+    tag signal.MqttConnectionError
+   </rule>
+  <rule>
+    key message
+    pattern /^.+$/
+    tag noise
+  </rule>
+</match>
+```
+
+What this directive does: it matches only records for which the `tag` contains nifi.platform. If set up correctly, these should only match platform logs coming from NiFi components. Then, the directive looks at the `message` property and if the value matches the regex pattern defined in `pattern` than it replaces the tag with `signal.MqttConnectionError`. Otherwise, the tag gets rewritten to `noise`.
+
+#### Summary of capturing
+
+In order to make this subsection round, here is a short summary of the 3 main ways how log-based Signals can be captured:
+
+* Any layer with control:
+  * use of Fluentd SDK (optionally including CloudEvents specifcation)
+  * use of conventional HTTP-POST logging to Fluentd's HTTP endpoint
+* Any layer without control, only access to logs as-is:
+  * use of regex pattern matching within Fluentd to mark certain logs as Signals
 
 #### Where to forward logs
 
 There is a wide selection of output plugins, so that targets can be tailored to requirements. In our monitoring pipeline, as illustrated in the architecture image, logs are separated into two subsets, *Signal*s and *Noise*s. Every log that receives the annotation `signal` in its tag is interpreted as a *Signal* and therefore will be broadcast to the Kafka component's `signals` topic. The rest of the logs are pushed to Elasticsearch, where DevOps and stakeholders can further use/visualize the data for other purposes.
 
-
-
 ### Metric Collection and Alerting: [Prometheus](https://prometheus.io/) ![Prometheus](https://avatars1.githubusercontent.com/u/3380462?s=25&v=4)
+
+**Goal**: provide a consistent way to build Signals based on time-series data
+
+**Why** Prometheus: it is free, open-source and part of the [Cloud Native Computing Foundation](https://www.cncf.io/projects/) (CNCF) with a graduated status. It has huge community and commercial support.
+
+**Alternative(s)**: InfluxDB (TICK stack), OpenTSDB, Nagios, Sensu
+
+Before going into the details, it is advisable to make oneself familiar with Prometheus' architecture. The following diagram has been taken over from the official [documentation](https://prometheus.io/docs/introduction/overview/#architecture).
+
+![Prometheus Architecture](https://prometheus.io/assets/architecture.png)
+
+With regard to monitoring, there are a few key things that should be kept in mind:
+
+* Prometheus is *meant to be* pull-based
+  * it requires targets that can be *scraped* for metrics
+  * there is a `Pushgateway` component supporting the push-based metrics, however these should be utilized sparingly
+
+For the scope of this project, we make the assumption that defined alerts in Prometheus for which the Alertmanager creates notifications are meant to be Signals.
+
+#### How to bring data into Prometheus
+
+Similar to the case with logging, different strategies exist depending on the degree of control over the target component. These include:
+
+* **Exporter-based**:
+  * Due to Prometheus' popularity, there are so-called exporters for a wide range of applications, including those for Big Data. Exporters are essentially jobs/programs that connect to their targeted application and provide the application's metrics in the right format for Prometheus to scrape. For example, Mosquitto (MQTT Broker in the pipeline) has an [available exporter](https://github.com/sapcc/mosquitto-exporter). The same applies for Hadoop's [resource manager or namenode](https://github.com/wyukawa/hadoop_exporter) and [Elasticsearch](https://github.com/justwatchcom/elasticsearch_exporter). Unfortunately, not every platform/engine has a corresponding available exporter implementation. For instance, at the time of writing, Apache Spark only supports the provision of JVM-metrics with a Graphite sink. A possible workaround involves setting up a [Graphite exporter](https://github.com/prometheus/graphite_exporter) - a server which accepts metrics (in this case from Spark) in Graphite protocol and provisions them as Prometheus metrics. In contrast, Apache Flink [natively supports](https://ci.apache.org/projects/flink/flink-docs-stable/monitoring/metrics.html#prometheus-orgapacheflinkmetricsprometheusprometheusreporter) the reporting of internal metrics in Prometheus format - all required is an extra JAR file and a flag.
+  * **Advantage of exporter**: exporters offer time-series data on metrics that are specific to the monitored application. If we're only interested in low-level metrics such as RAM usage or the general JVM metrics, then an exporter might be unnecessary. On the other hand, Flink's exporter provides more fine-grained metrics about the JobManager, TaskManagers, operators and much more which are specific to Flink. Another example is Mosquitto. Without an already written exporter, it would require additional manual effort to tap into Mosquitto's internals in order to get the metrics. The existing exporter already offers a great set of metrics that we can leverage.  
+* **Application-based**:
+  * In custom Flink code, it's very easy to [register metrics](https://ci.apache.org/projects/flink/flink-docs-stable/monitoring/metrics.html#registering-metrics) due to its support for Prometheus.
+* Last resort: **cAdvisor**
+
+#### How to capture Signals with Prometheus
+
+Define alerts inside Prometheus (see its [README](monitoring/prometheus/README.md) for configuration details) based on the desired metrics (which can be infrastructure, platform, application or a combination thereof). The AlertManager sends each alert as a JSON to the URL defined in the `webhook_config`. Due to AlertManager's limitations in the selection of receivers and our requirement to get alerts into a Kafka queue, a bridge between the two must be used. In our monitoring pipeline this is solved by a fast, lightweight Nest application (Node.js based) with the sole responsibility of receiving Prometheus alerts from the AlertManager and forwarding them to Kafka's `signals` topic.
+
+### Prometheus->Kafka Bridge: Ingestion-Service by [Nest.js](https://nestjs.com/) ![Nestjs](https://avatars1.githubusercontent.com/u/28507035?s=25&v=4)
 
 tbd
 
 ### Reliable Signal Collector: [Kafka](https://kafka.apache.org/) Pub/Sub <img src="https://images.safe.com/logos/formats/apache-kafka_100.png" alt="Kafka" width="25" />
-
-tbd
-
-### Prometheus->Kafka Bridge: Ingestion-Service by [Nest.js](https://nestjs.com/) ![Nestjs](https://avatars1.githubusercontent.com/u/28507035?s=25&v=4)
 
 tbd
 
