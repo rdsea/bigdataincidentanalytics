@@ -1,0 +1,96 @@
+{
+  "summary": "Incident \"Data Loading Incident\" is active! It is indicated by 4 signal(s).",
+  "participatingComponents": [
+    "MQTT_BROKER",
+    "NIFI",
+    "NODE-RED"
+  ],
+  "name": "Data Loading Incident",
+  "dateTime": "2020-02-21T21:20:41.617Z",
+  "compositeSignal": {
+    "name": "MqttUnavailable",
+    "coolDownSec": 120,
+    "activationThreshold": 1,
+    "numOfConnectedSignals": 4,
+    "activeSignals": [
+      {
+        "name": "MqttInstanceDownAlert",
+        "timestamp": "2020-02-21T21:20:41.617Z",
+        "pipelineComponent": "MQTT_BROKER",
+        "summary": "MQTT not reachable",
+        "details": {
+          "labels": {
+            "instance": "mosquitto-exporter:9234",
+            "job": "mqtt",
+            "severity": "critical"
+          },
+          "annotations": {
+            "description": "mosquitto-exporter:9234 of job mqtt has not been receiving any increase in the broker's uptime for half a minute."
+          }
+        },
+        "threshold": -1,
+        "thresholdCounter": -1,
+        "lastSignalTime": "2020-02-21T21:20:41.617Z",
+        "coolDownSec": -1
+      },
+      {
+        "name": "MqttConnectionError",
+        "timestamp": "2020-02-21T21:20:33.224Z",
+        "pipelineComponent": "NIFI",
+        "summary": "ConsumeMQTT[id=74042ed4-c995-3baa-744b-fab0653c5533] Connection to tcp://mqtt:1883 lost (or was never connected) and connection failed. Yielding processor: MqttException (0) - java.net.UnknownHostException: mqtt",
+        "details": {
+          "level": "ERROR",
+          "logger": "org.apache.nifi.processors.mqtt.ConsumeMQTT",
+          "throwable": "org.eclipse.paho.client.mqttv3.MqttException: MqttException\n\tat org.eclipse.paho.client.mqttv3.internal.ExceptionHelper.createMqttException(ExceptionHelper.java:38)\n\tat org.eclipse.paho.client.mqttv3.internal.ClientComms$ConnectBG.run(ClientComms.java:715)\n\tat java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:511)\n\tat java.util.concurrent.FutureTask.run(FutureTask.java:266)\n\tat java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.access$201(ScheduledThreadPoolExecutor.java:180)\n\tat java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:293)\n\tat java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)\n\tat java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)\n\tat java.lang.Thread.run(Thread.java:748)\nCaused by: java.net.UnknownHostException: mqtt\n\tat java.net.AbstractPlainSocketImpl.connect(AbstractPlainSocketImpl.java:184)\n\tat java.net.SocksSocketImpl.connect(SocksSocketImpl.java:392)\n\tat java.net.Socket.connect(Socket.java:607)\n\tat org.eclipse.paho.client.mqttv3.internal.TCPNetworkModule.start(TCPNetworkModule.java:84)\n\tat org.eclipse.paho.client.mqttv3.internal.ClientComms$ConnectBG.run(ClientComms.java:701)\n\t... 7 common frames omitted\n",
+          "thread": "Timer-Driven Process Thread-9",
+          "software": "PLATFORM",
+          "log": "2020-02-21 21:20:33.219 [Timer-Driven Process Thread-9] ERROR org.apache.nifi.processors.mqtt.ConsumeMQTT  - ConsumeMQTT[id=74042ed4-c995-3baa-744b-fab0653c5533] Connection to tcp://mqtt:1883 lost (or was never connected) and connection failed. Yielding processor: MqttException (0) - java.net.UnknownHostException: mqtt\norg.eclipse.paho.client.mqttv3.MqttException: MqttException\n\tat org.eclipse.paho.client.mqttv3.internal.ExceptionHelper.createMqttException(ExceptionHelper.java:38)\n\tat org.eclipse.paho.client.mqttv3.internal.ClientComms$ConnectBG.run(ClientComms.java:715)\n\tat java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:511)\n\tat java.util.concurrent.FutureTask.run(FutureTask.java:266)\n\tat java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.access$201(ScheduledThreadPoolExecutor.java:180)\n\tat java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:293)\n\tat java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1149)\n\tat java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:624)\n\tat java.lang.Thread.run(Thread.java:748)\nCaused by: java.net.UnknownHostException: mqtt\n\tat java.net.AbstractPlainSocketImpl.connect(AbstractPlainSocketImpl.java:184)\n\tat java.net.SocksSocketImpl.connect(SocksSocketImpl.java:392)\n\tat java.net.Socket.connect(Socket.java:607)\n\tat org.eclipse.paho.client.mqttv3.internal.TCPNetworkModule.start(TCPNetworkModule.java:84)\n\tat org.eclipse.paho.client.mqttv3.internal.ClientComms$ConnectBG.run(ClientComms.java:701)\n\t... 7 common frames omitted\n"
+        },
+        "threshold": 10,
+        "thresholdCounter": 32,
+        "lastSignalTime": "2020-02-21T21:20:33.224Z",
+        "coolDownSec": 15
+      },
+      {
+        "name": "NotReceivingSensorData",
+        "timestamp": "2020-02-21T21:20:07.183Z",
+        "pipelineComponent": "NODE-RED",
+        "summary": "Instance nodered:1881 is not receiving sensor data",
+        "details": {
+          "labels": {
+            "instance": "nodered:1881",
+            "job": "node-red",
+            "severity": "critical"
+          },
+          "annotations": {
+            "description": "nodered:1881 of job node-red has not been receiving any sensor data from the MQTT broker for the last 30 seconds."
+          }
+        },
+        "threshold": -1,
+        "thresholdCounter": -1,
+        "lastSignalTime": "2020-02-21T21:20:07.183Z",
+        "coolDownSec": -1
+      },
+      {
+        "name": "MqttConnectionFailureLog",
+        "timestamp": "2020-02-21T21:20:02.991Z",
+        "pipelineComponent": "NODE-RED",
+        "summary": "Disconnected from broker: nodered@mqtt://mqtt:1883",
+        "details": {
+          "specversion": "0.3",
+          "id": "37a09c3c-e1c1-46a1-b9fa-b815378019b7",
+          "type": "com.rdsea.nodered.platform",
+          "source": "Node-Red/Sensor-Data-Flow",
+          "time": "2020-02-21T21:20:02.991Z",
+          "subject": "signpost",
+          "level": "INFO",
+          "software": "PLATFORM"
+        },
+        "threshold": -1,
+        "thresholdCounter": -1,
+        "lastSignalTime": "2020-02-21T21:20:02.991Z",
+        "coolDownSec": -1
+      }
+    ]
+  }
+}
