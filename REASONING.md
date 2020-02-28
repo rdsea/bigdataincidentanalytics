@@ -6,6 +6,7 @@ This document describes the core ideas and components that can be used in order 
 
 - [High-Level Introduction](#high-level-introduction)
 - [Reference Big Data Pipeline](#reference-big-data-pipeline)
+  
   * [Sensors](#sensors)
     + [Dataset](#dataset)
   * [MQTT Broker](#mqtt-broker)
@@ -15,48 +16,51 @@ This document describes the core ideas and components that can be used in order 
   * [Apache Hadoop](#apache-hadoop)
   * [Apache Spark](#apache-spark)
   * [Elasticsearch and Kibana](#elasticsearch-and-kibana)
-  * [Minimum Deployment View (Docker)](#minimum-deployment-view--docker-)
+  * [Minimum Deployment View (Docker)](#minimum-deployment-view-docker)
 - [Concepts and Terminology](#concepts-and-terminology)
-    + [Importance of abstraction](#importance-of-abstraction)
+  
+  + [Importance of abstraction](#importance-of-abstraction)
   * [Pipeline Component](#pipeline-component)
   * [Signal](#signal)
   * [Composite Signal](#composite-signal)
-- [Monitoring & Reasoning Pipeline](#monitoring---reasoning-pipeline)
+- [Monitoring & Reasoning Pipeline](#monitoring--reasoning-pipeline)
+  
   * [Simplified summary](#simplified-summary)
   * [Pipeline at a glance](#pipeline-at-a-glance)
     + [Note on modularity](#note-on-modularity)
   * [Structure of a Signal](#structure-of-a-signal)
-    + [Example: Log-based Signal JSON](#example--log-based-signal-json)
-    + [Example: Prometheus Alert-based Signal JSON](#example--prometheus-alert-based-signal-json)
-  * [Log Collection: [Fluentd](https://www.fluentd.org/)](#log-collection---fluentd--https---wwwfluentdorg--)
+    + [Example: Log-based Signal JSON](#example-log-based-signal-json)
+    + [Example: Prometheus Alert-based Signal JSON](#example-prometheus-alert-based-signal-json)
+  * [Log Collection: [Fluentd](https://www.fluentd.org/)](#log-collection-fluentd)
     + [How to collect logs](#how-to-collect-logs)
     + [The role of tags](#the-role-of-tags)
     + [How to capture log-based signals](#how-to-capture-log-based-signals)
     + [Summary of capturing](#summary-of-capturing)
     + [Where to forward logs](#where-to-forward-logs)
-  * [Metric Collection and Alerting: [Prometheus](https://prometheus.io/)](#metric-collection-and-alerting---prometheus--https---prometheusio--)
+  * [Metric Collection and Alerting: [Prometheus](https://prometheus.io/)](#metric-collection-and-alerting-prometheus)
     + [How to bring data into Prometheus](#how-to-bring-data-into-prometheus)
     + [How to capture Signals with Prometheus](#how-to-capture-signals-with-prometheus)
-    + [Example: From reporting to Signal](#example--from-reporting-to-signal)
-  * [Prometheus -> Kafka Bridge: Ingestion-Service by [Nest.js](https://nestjs.com/)](#prometheus----kafka-bridge--ingestion-service-by--nestjs--https---nestjscom--)
-  * [Reliable Signal Collector: [Kafka](https://kafka.apache.org/) Pub/Sub](#reliable-signal-collector---kafka--https---kafkaapacheorg---pub-sub)
-  * [Scalable Signal Reasoning: [Flink](https://flink.apache.org/) Reasoner Job](#scalable-signal-reasoning---flink--https---flinkapacheorg---reasoner-job)
+    + [Example: From reporting to Signal](#example-from-reporting-to-signal)
+  * [Prometheus -> Kafka Bridge: Ingestion-Service by [Nest.js](https://nestjs.com/)](#prometheus---kafka-bridge-ingestion-service-by-nestjs)
+  * [Reliable Signal Collector: [Kafka](https://kafka.apache.org/) Pub/Sub](#reliable-signal-collector-kafka-pubsub)
+  * [Scalable Signal Reasoning: [Flink](https://flink.apache.org/) Reasoner Job](#scalable-signal-reasoning-flink-reasoner-job)
     + [What the Reasoner does](#what-the-reasoner-does)
     + [Recurring Signals](#recurring-signals)
       - [Example](#example)
     + [CompositeSignal](#compositesignal)
-      - [How does the Reasoner check time constraints?](#how-does-the-reasoner-check-time-constraints-)
+      - [How does the Reasoner check time constraints?](#how-does-the-reasoner-check-time-constraints)
     + [Incident Reporting](#incident-reporting)
-  * [Dynamic Incident and Signal Knowledge Graph: [Neo4j](https://neo4j.com/)](#dynamic-incident-and-signal-knowledge-graph---neo4j--https---neo4jcom--)
+  * [Dynamic Incident and Signal Knowledge Graph: [Neo4j](https://neo4j.com/)](#dynamic-incident-and-signal-knowledge-graph-neo4j)
     + [Signal](#signal-1)
     + [CompositeSignals and Incidents](#compositesignals-and-incidents)
-  * [Long-term Storage of Recorded Signals: [Cassandra](https://cassandra.apache.org/)](#long-term-storage-of-recorded-signals---cassandra--https---cassandraapacheorg--)
-  * [Frequent-Pattern Mining: [Spark](https://spark.apache.org/)](#frequent-pattern-mining---spark--https---sparkapacheorg--)
+  * [Long-term Storage of Recorded Signals: [Cassandra](https://cassandra.apache.org/)](#long-term-storage-of-recorded-signals-cassandra)
+  * [Frequent-Pattern Mining: [Spark](https://spark.apache.org/)](#frequent-pattern-mining-spark)
     + [Notes on implementation](#notes-on-implementation)
-    + [Limitations, Area of Improvement](#limitations--area-of-improvement)
-  * [Minimum Deployment View (Docker)](#minimum-deployment-view--docker--1)
+    + [Limitations, Area of Improvement](#limitations-area-of-improvement)
+  * [Minimum Deployment View (Docker)](#minimum-deployment-view-docker-1)
 - [Limitations](#limitations)
 - [Potential Improvements](#potential-improvements)
+  
     + [FP-Mining of Incidents](#fp-mining-of-incidents)
     + [Fluentd UI](#fluentd-ui)
     + [RDF Semantics + Neo4j](#rdf-semantics---neo4j)
@@ -85,7 +89,7 @@ The dataset is called *GNFUV Unmanned Surface Vehicles Sensor Data Set 2 Data Se
 
 The datasets have been adjusted so that only the attributes *device_id*, *humidity*, *temperature*, *time* are included. The simulated sensor sends records in a configurable time interval. The following shows a sample JSON encoded record that gets published to the MQTT broker:
 
-```json
+```yaml
 {
 "device_id": "gnfuv-temp-exp1-55d487b85b-5g2xh",
 "humidity": "21",
@@ -108,7 +112,7 @@ The [Apache Flink](https://flink.apache.org/) component represents a common stre
 
 A sample JSON-encoded aggregation produced by Flink looks the following:
 
-```json
+```yaml
 {
     "id": "94778233-4024-4962-b398-dc179f144457",
     "deviceId": "gnfuv-temp-exp1-55d487b85b-5g2xh",
@@ -363,7 +367,7 @@ Moreover, **the value of an event's tag decides whether it is handled as a Signa
 
 `tag: "**.signal.<SIGNAL_NAME>"`
 
-The tag can contain any other parts (separeted by dots) up to `signal`. The part **after** `signal` stands for the name of the signal. The name part is crucial, because a Signal is uniquely identified by its name and the pipeline component it belongs to. Valid examples:
+The tag can contain any other parts (separated by dots) up to `signal`. The part **after** `signal` stands for the name of the signal. The name part is crucial, because a Signal is uniquely identified by its name and the pipeline component it belongs to. Valid examples:
 
 * `tag: "signal.MqttStartupLog"`
 * `tag: "com.rdsea.mqtt.signal.MqttStartupLog"`
@@ -499,7 +503,9 @@ Please note the line second to last. The value of `FLUENTD_TAG` is stored as a s
 
 For completeness, here is how the `InvokeHTTP` Processor is configured:
 
-![NiFi Signal to Fluentd InvokeHTTP](documents/images/NiFi_Signal_To_Fluentd_2.png)
+<p align="center">
+  <img width="80%" src="documents/images/NiFi_Signal_To_Fluentd_2.png">
+</p>
 
 Note the usage of the attribute `FLUENTD_TAG`. What this node does is making an HTTP POST request to the remote URL with the JSON content we built in the processor before.
 
@@ -774,7 +780,7 @@ As described in the previous section, a Signal node is automatically created by 
 
 **Example**: Let's say the operator of the MQTT broker set up a Prometheus alert named `MqttInstanceDownAlert`. Upon the activation of this alert, the Signal gets through to the Reasoner and will be persisted into the Knowledge Graph as shown below.
 
-<img src="documents/images/Neo4j_New_Signal.png" alt="Neo4j New Signal" style="zoom:60%;" />
+<img src="documents/images/Neo4j_New_Signal.png" alt="Neo4j New Signal" style="zoom:40%;" />
 
 *Note*: some relationships and nodes are omitted on purpose.
 
@@ -793,8 +799,8 @@ Currently, CompositeSignal and Incident nodes need to be created manually but it
 ```cypher
 MATCH (e:Element {name:'Incident'})
 MATCH (cs:Element {name:'CompositeSignal'})
-CREATE (compSig:CompositeSignal {name:'MqttUnavailable'}) // matches or creates the CompositeSignal if not exists
-CREATE (i:Incident {name:'Data Loading Incident'}) // matches or creates the Incident if not exists
+CREATE (compSig:CompositeSignal {name:'MqttUnavailable'}) // creates the CompositeSignal
+CREATE (i:Incident {name:'Data Loading Incident'}) // the Incident
 CREATE (e)-[:IS]->(i), (cs)-[:IS]->(compSig),(compSig)-[:INDICATES]->(i) // here we connect the nodes via relationships
 SET compSig.activationThreshold=0.5 // optionally set the activationThreshold of the CompositeSignal
 SET compSig.coolDownSec=30; // optionally set the coolDownSec of the CompositeSignal
@@ -802,7 +808,7 @@ SET compSig.coolDownSec=30; // optionally set the coolDownSec of the CompositeSi
 
 This query results in the following nodes and relationships:
 
-<img src="documents/images/Neo4j_New_CompSig.png" alt="Neo4j New CompositeSignal and Incident" style="zoom:60%;" />
+<img src="documents/images/Neo4j_New_CompSig.png" alt="Neo4j New CompositeSignal and Incident" style="zoom:40%;" />
 
 Following the same strategy, we can connect multiple individual Signal nodes with a CompositeSignal one via the `PART_OF` relationship. The below diagram shows a full example, containing 4 Signals being part of the `MqttUnavailable` CompositeSignal.
 
@@ -903,6 +909,4 @@ Frequent Pattern Mining could be applied to incidents as well. The idea is that 
 #### RDF Semantics + Neo4j
 
 There has been rudimentary experiments with RDF-based semantics and Neo4j by [Neo4j Labs](https://github.com/neo4j-labs/neosemantics). Approaches like this could be investigated to improve the inferencing part of the monitoring.
-
-
 
