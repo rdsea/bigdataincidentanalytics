@@ -4,7 +4,6 @@ This document describes the core ideas and components that can be used in order 
 
 - [High-Level Introduction](#high-level-introduction)
 - [Reference Big Data Pipeline](#reference-big-data-pipeline)
-  
   * [Sensors](#sensors)
     + [Dataset](#dataset)
   * [MQTT Broker](#mqtt-broker)
@@ -16,13 +15,11 @@ This document describes the core ideas and components that can be used in order 
   * [Elasticsearch and Kibana](#elasticsearch-and-kibana)
   * [Minimum Deployment View (Docker)](#minimum-deployment-view-docker)
 - [Concepts and Terminology](#concepts-and-terminology)
-  
   + [Importance of abstraction](#importance-of-abstraction)
   * [Pipeline Component](#pipeline-component)
   * [Signal](#signal)
   * [Composite Signal](#composite-signal)
 - [Monitoring & Reasoning Pipeline](#monitoring--reasoning-pipeline)
-  
   * [Simplified summary](#simplified-summary)
   * [Pipeline at a glance](#pipeline-at-a-glance)
     + [Note on modularity](#note-on-modularity)
@@ -58,7 +55,6 @@ This document describes the core ideas and components that can be used in order 
   * [Minimum Deployment View (Docker)](#minimum-deployment-view-docker-1)
 - [Limitations](#limitations)
 - [Potential Improvements](#potential-improvements)
-  
     + [FP-Mining of Incidents](#fp-mining-of-incidents)
     + [Fluentd UI](#fluentd-ui)
     + [RDF Semantics + Neo4j](#rdf-semantics---neo4j)
@@ -106,7 +102,7 @@ For more detailed information about configuration, deployment please refer to th
 
 ### Apache Flink
 
-The [Apache Flink](https://flink.apache.org/) component represents a common stream-processing aggregation scenario. It consumes the sensor data from the MQTT broker, keys the stream by the `device_id` attritbute and calculates the averages of `humidity` and `temperature` for every 10 records. The resulting calculation is finally sent to the Elasticsearch component and stored under the `flink-sensor-data` index.
+The [Apache Flink](https://flink.apache.org/) component represents a common stateful stream-processing aggregation scenario. It consumes the sensor data from the MQTT broker, keys the stream by the `device_id` attritbute and calculates the averages of `humidity` and `temperature` for every 10 records. The resulting calculation is finally sent to the Elasticsearch component and stored under the `flink-sensor-data` index.
 
 A sample JSON-encoded aggregation produced by Flink looks the following:
 
@@ -144,7 +140,7 @@ For more information about implementation details, configuration and deployment 
 
 ### Node-RED
 
-The [Node-RED](https://nodered.org/) component represents a Node.js-based event-driven data pipeline. The provided *Flow* for our scenario simply consumes the sensor records from the MQTT broker and writes them to its local filesystem. The purpose of this component is to have technological heterogeneity with regard to platforms and programming languages. 
+The [Node-RED](https://nodered.org/) component is a Node.js-based event-driven data pipeline. The provided *Flow* for our scenario simply consumes the sensor records from the MQTT broker and writes them to its local filesystem. The purpose of this component is to have technological heterogeneity with regard to platforms and programming languages. 
 
 ### Apache Hadoop
 
@@ -164,7 +160,7 @@ Apart from their usual responsibilities, these two components are present in ord
 
 ### Minimum Deployment View (Docker)
 
-The [docker-compose.yml](docker-compose.yml) file contains all the definitions of services/containers that are required in order to run the reference pipeline. Only the Elasticsearch and Kibana services are not defined in this file, because they are also part of the monitoring pipeline (their definitions can be found in  [docker-compose.monitoring.yml](docker-compose.monitoring.yml). Please note that some of the services are meant to be scaled horizontally. Below  a diagram is shown, containing the minimum amount of containers.
+The [docker-compose.yml](docker-compose.yml) file contains all the definitions of services/containers that are required in order to run the reference pipeline. Only the Elasticsearch and Kibana services are not defined in this file, because they are also part of the monitoring pipeline (their definitions can be found in [docker-compose.monitoring.yml](docker-compose.monitoring.yml)). Please note that some of the services are meant to be scaled horizontally. Below  a diagram is shown, containing the minimum amount of containers.
 
 ![Reference Pipeline Deployment View](https://raw.githubusercontent.com/rdsea/bigdataincidentanalytics/reasoning/documents/images/Pipeline%20Deployment%20View.png)
 
@@ -174,13 +170,13 @@ This section defines a set of terms that are relevant in the context of monitori
 
 #### Importance of abstraction
 
-Monitoring of today's distributed systems involves a lot of complexity. In practice, no two systems are equal and given two companies the requirements usually differ greatly. As a consequence there is no silver bullet or an off-the-shelf solution suitable for all systems. This is especially true for Big Data applications. In order to avoid chaos and gain observability into these applications, it is important to keep up a certain level of abstraction. 
+Monitoring of today's distributed systems involves a lot of complexity. In practice, no two systems are equal and given two companies the requirements will usually differ greatly. As a consequence there is no silver bullet or an off-the-shelf solution suitable for all systems. This is especially true for Big Data applications. In order to avoid chaos and gain observability into these applications, it is important to keep up a certain level of abstraction. 
 
 When it comes to the reasoning about which set of event(s) led to a certain outcome, it doesn't play a crucial role, whether the system or parts of the system are self-hosted or deployed in the Cloud, as long as we are able to gather the relevant information about a certain symptom leading to an incident. Consider the following example: the Flink component indicates that there are no records coming from the MQTT Broker. This is an actual symptom that we ought to be made aware of, because the constant processing of sensor data is crucial for meeting SLAs and SLOs. The cause, in our case the MQTT broker not delivering data, can potentially be one of myriad issues. From the reasoning perspective, it doesn't necessarily matter how the broker has been deployed. Maybe the broker instance has been restarted; maybe there is a temporary network outage; maybe the Cloud environment does its job at being elastic and redistributes the load. The important thing here is the ability to capture the issue at Flink and clearly pointing the cause to the MQTT broker. 
 
 ### Pipeline Component
 
-As you will see, the term *pipeline component* gets used a lot in the monitoring/reasoning parts. In order to maintain abstraction, this term refers to a component which is part of the whole Big Data pipeline and has a clear function. For example, in the very first diagram Flink is a pipeline component, while the user-defined job, the jobmanager and task managers are simply parts of that component. 
+As we will see, the term *pipeline component* gets used a lot in the monitoring/reasoning parts. In order to maintain abstraction, this term refers to a component which is part of the whole Big Data pipeline and has a clear function. For example, in the very first diagram Flink is a pipeline component, while the user-defined job, the jobmanager and task managers are simply parts of that component. 
 
 ### Signal
 
@@ -188,15 +184,15 @@ During monitoring of Big Data pipelines, we need to deal with a great amount of 
 
 As defined in the book [Introductory Signal Processing](https://books.google.at/books?id=QBT7nP7zTLgC&pg=PA1&redir_esc=y#v=onepage&q&f=false), a signal "*is a function that conveys information about a phenomenon.*" In this context, a signal can be any sort of data, message that expresses an important event used later for incident reasoning. As we will see later, in the scope of this project there are 3 ways to generate signals, all of them in a JSON format:
 
-* marking of infrastrucure/platform logs as signals
+* marking of infrastructure/platform logs as signals
 * emitting user-written signals from the application level
 * construct Prometheus alerts on any level which will be interpreted as signals
 
-The Monitoring & Reasoning Pipeline section goes into more detail how a Signal should look like.
+The [Monitoring & Reasoning Pipeline](#monitoring--reasoning-pipeline) section goes into more detail how a Signal should look like.
 
 ### Composite Signal
 
-A Compsite Signal is the same as a simple Signal as far as its intentions are concerned. The difference is however, that a Composite Signal is composed of one or more Signals. This concept makes it easily possible to combine arbitrary Signals which indicate incidents.
+A Compsite Signal is the same as a simple Signal as far as its intentions are concerned. The difference is however, that a Composite Signal is composed of one or more Signals. This concept makes it easily possible to combine arbitrary Signals which indicate incidents. Section [CompositeSignal](#compositesignal) later on goes much deeper into the topic.
 
 ## Monitoring & Reasoning Pipeline
 
@@ -214,7 +210,7 @@ Ignoring the specific chosen tools, the whole process can be summarized into the
   * if an incident gets activated, a report is generated and sent to the visualizing component
   * additionally, each Signal's occurrence is recorded for future analysis
 * perform on-demand Frequent-Pattern Mining on the historical Signal records, discover correlated Signals and provide recommendations for combining multiple Signals into CompositeSignals
-* maintain the Knowledge Graph by adding new CompositeSignals and indicated incidents
+* maintain the Knowledge Graph by adding new or modifying existing CompositeSignals and indicated Incidents
 
 ### Pipeline at a glance
 
@@ -230,8 +226,8 @@ While the pipeline may seem unreasonably fragmented, this is not a side effect. 
 
 As already introduced, a Signal is any event that is marked or emitted as important to capture. These Signals are later processed by a Flink-based job, therefore there are some necessary bits of information assumed for each one. Currently, 2 types of JSON-formatted Signals are supported: 
 
-* Signals represented as logs: any log collected centrally by Fluentd marked as Signal
-* Signals represented as Prometheus alerts: any defined Prometheus alert
+* Signals represented as logs: any log collected centrally by Fluentd that has been marked as Signal
+* Signals represented as Prometheus alerts: any defined Prometheus alert reaching the Reasoner component
 
  Whether the incoming Signal is parsed from a log or a Prometheus alert depends on the top-level attribute `signalType: "<SIGNAL_TYPE>"` which can be either `LOG` or `PROMETHEUS_ALERT`.
 
@@ -249,7 +245,7 @@ The absolute *minimum* required fields are shown below. Please note the decider 
 }
 ```
 
-The above JSON is just an excerpt of a typical Signal log. Since logs can have many more arbitrary fields and objects, there are no restrictions on them. Additional properties are parsed as a `details: [object]` property, which holds a key-value map of all the additional fields and values.
+The above JSON is just an excerpt of a common Signal log. Since logs can have many more arbitrary fields and objects, there are no restrictions on them. Additional properties are parsed as a `details: [object]` property, which holds a key-value map of all the additional fields and values.
 
 #### Example: Prometheus Alert-based Signal JSON
 
@@ -275,7 +271,7 @@ The complete alert object may look like this:
 {
   "signal_type": "PROMETHEUS_ALERT",
   "status": "firing",
-	"labels": {
+  "labels": {
     "alertname": "NotReceivingSensorData",
     "pipeline_component": "NODE-RED",
     "instance": "nodered:1881",
@@ -294,7 +290,7 @@ The complete alert object may look like this:
 
 Every additional, arbitrary, non-required key-value pairs inside `labels` and `annotations` are dynamically collected for later reporting.
 
-Please refer to the [official Prometheus documentation](https://prometheus.io/docs/alerting/configuration/#webhook_config) and to the section about the ingestion-service for more information about the structure of Prometheus alerts.
+Please refer to the [official Prometheus documentation](https://prometheus.io/docs/alerting/configuration/#webhook_config) and to the section about the [Ingestion-service](#prometheus---kafka-bridge-ingestion-service-by-nestjs) for more information about the structure of Prometheus alerts.
 
 If you're interested in how a Signal is represented in the Knowledge Graph and in the Reasoner component, please head over to the respective section.
 
@@ -312,7 +308,7 @@ If you're interested in how a Signal is represented in the Knowledge Graph and i
 
 How log data gets into Fluentd very much depends on the amount of control one has over the target component:
 
-* **No control**, only a Docker container or rolling log files: we make the assumption that we either have access to the Docker container or the output log files of the target component. In the latter case, the small sibling of Fluentd, called [Fluent Bit](http://fluentbit.org/) is recommended to be deployed as a sidecar container which tails the log file of the component and forwards the logs to the central Fluentd instance. Alternatively, for any given Docker container it is possible set a remote Fluentd instance as the log driver ([official documentation](https://docs.docker.com/config/containers/logging/fluentd/)). In the prototype [docker-compose.yml](docker-compose.yml) the definition looks like this:
+* **No control** - only a Docker container or rolling log files: we make the assumption that we either have access to the Docker container's deployment environment or the output log files of the target component. In the latter case, the small sibling of Fluentd, called [Fluent Bit](http://fluentbit.org/) is recommended to be deployed as a sidecar container which tails the log file of the component and forwards the logs to the central Fluentd instance. Alternatively, for any given Docker container it is possible set a remote Fluentd instance as the log driver ([official documentation](https://docs.docker.com/config/containers/logging/fluentd/)). In the prototype [docker-compose.yml](docker-compose.yml) the definition looks like as shown below. This directive tells Docker to output the logs of the container to a Fluentd instance instead of the default stdout.
 
   ```yaml
   logging:
@@ -355,13 +351,13 @@ How log data gets into Fluentd very much depends on the amount of control one ha
 
   For NPM-based applications, such as Node-RED there is a [fluent-logger](https://www.npmjs.com/package/fluent-logger) NPM package which can be leveraged to output any platform logs to a remote Fluentd instance.
 
-* **Control over the user-application level**: depending on the specific application there may be some limitations, but for the majority of the cases it is recommended to use one of the Fluentd SDKs. There are libraries available for all major programming languages. Please refer to the pipeline components on how to use the libraries.
+* **Control over the user-application level**: depending on the specific application there may be some limitations, but for the majority of the cases it is recommended to use one of Fluentd's SDK. There are libraries available for all major programming languages. Please refer to the pipeline components on how to use the libraries.
 
 #### The role of tags
 
 Upon careful inspection of Fluentd it can be observed that tagging of logs is an essential component of it. Every incoming event in Fluentd needs to have a `tag` property. It is this attritbute that one needs to rely on when defining `filter` and `match` directives (see [configruation](logging/fluentd/conf/fluent.conf) for concrete examples). 
 
-Moreover, **the value of an event's tag decides whether it is handled as a Signal or not**. In other words, the `tag` property is the way to *annotate* log-based events and mark them as signals. The format is defined as follows:
+Moreover, in the scope of this project, **the value of an event's tag decides whether it is handled as a Signal or not**. In other words, the `tag` property is the way to *annotate* log-based events and mark them as signals. The format is defined as follows:
 
 `tag: "**.signal.<SIGNAL_NAME>"`
 
@@ -405,7 +401,7 @@ If the application-layer can be controlled/updated, then the recommended way is 
 
 This may seem too much at first, however only the fields `id`, `source`, `specversion` and `type` are mandatory. The rest (and potentially more) is up to the individual requirements.
 
-Since such `CloudEvents` are essentially JSON objects, one can simply build them manually. At the same time there are [SDKs](https://github.com/cloudevents/spec#sdks) for several programming languages so that the writing of such objects are made easier.
+Since such `CloudEvents` are essentially JSON objects, one can simply build them manually. At the same time there are [SDKs](https://github.com/cloudevents/spec#sdks) for several programming languages so that the writing of such objects is made easier.
 
 As an illustration, in the Node-RED component it would be possible to signal the missing time information of sensor data that otherwise would be critical using a `function` node:
 
@@ -527,14 +523,14 @@ Up to this point we've covered how application-layer, log-based Signals can be c
 </match>
 ```
 
-What this directive does: it matches only records for which the `tag` contains nifi.platform. If set up correctly, these should only match platform logs coming from NiFi components. Then, the directive looks at the `message` property and if the value matches the regex pattern defined in `pattern` than it replaces the tag with `signal.MqttConnectionError`. Otherwise, the tag gets rewritten to `noise`.
+What this directive does: it matches only records for which the `tag` contains nifi.platform. If set up correctly, these should only match platform logs coming from NiFi components. Then, the directive looks at the `message` property and if the value matches the regex pattern defined in `pattern` than it replaces the tag with `signal.MqttConnectionError` which in turn will cause the record to be handled as Signal and forwarded to the Reasoner. Otherwise, the tag gets rewritten to `noise`.
 
 #### Summary of capturing
 
 In order to make this subsection round, here is a short summary of the 3 main ways how log-based Signals can be captured:
 
 * Any layer with control:
-  * use of Fluentd SDK (optionally including CloudEvents specifcation)
+  * use of Fluentd SDK (optionally including CloudEvents specification)
   * use of conventional HTTP-POST logging to Fluentd's HTTP endpoint
 * Any layer without control, only access to logs as-is:
   * use of regex pattern matching within Fluentd to mark certain logs as Signals
@@ -561,9 +557,7 @@ With regard to monitoring, there are a few key things that should be kept in min
 
 * Prometheus is *meant to be* pull-based
   * it requires targets that can be *scraped* for metrics
-  * there is a `Pushgateway` component supporting the push-based metrics, however these should be utilized sparingly. Pushgateway is mean to be used for ephemeral, short-lived batch jobs.
-
-For the scope of this project, we make the assumption that defined alerts in Prometheus for which the Alertmanager creates notifications are meant to be Signals.
+  * there is a `Pushgateway` component supporting the push-based metrics, however these should be utilized sparingly. Pushgateway is designed to be used for ephemeral, short-lived batch jobs.
 
 #### How to bring data into Prometheus
 
@@ -574,14 +568,14 @@ Similar to the case with logging, different strategies exist depending on the de
   * **Advantage of exporter**: exporters offer time-series data on metrics that are specific to the monitored application. If we're only interested in low-level metrics such as RAM usage or the general JVM metrics, then an explicit exporter might be unnecessary. On the other hand, Flink's exporter provides more fine-grained metrics about the JobManager, TaskManagers, operators and much more which are specific to Flink. Another example is Mosquitto. Without an already written exporter, it would require additional manual effort to tap into Mosquitto's internals in order to get the metrics. The existing exporter already offers a great set of metrics that we can leverage.  
 * **Application-based**:
   * Specific, custom-written metrics need to be exposed on the application-layer. For this the recommended way is to use one of the existing [client libraries](https://prometheus.io/docs/instrumenting/clientlibs/). 
-  * In custom Flink code, it's very easy to [register metrics](https://ci.apache.org/projects/flink/flink-docs-stable/monitoring/metrics.html#registering-metrics) due to its support for Prometheus.
+  * For instance, in custom Flink code, it's very easy to [register metrics](https://ci.apache.org/projects/flink/flink-docs-stable/monitoring/metrics.html#registering-metrics) due to its built-in support for Prometheus.
 * Last resort: **cAdvisor**
   * Assuming that the previous two strategies cannot be applied due to limitations, a deamon called [cAdvisor](https://github.com/google/cadvisor) provides a fallback for getting resource usage and performance metrics of running Docker containers.
   * If there is absolutely no way to instrument a crucial component or expose its metrics, then the recommended decision is to avoid investing excessive effort into that component and rely on the reporting of other ones. To illustrate this, let us assume that there is a third-party data source from where our pipeline is receiving its crucial data from. If the monitoring at the source is infeasible, then it should be performed at the entry point of our pipeline, namely the first component(s) the external data arrives at (which can be instrumented).
 
 #### How to capture Signals with Prometheus
 
-As mentioned earlier, the notion of Signals in case of metrics are based on alerts that need to be defined inside Prometheus. The diagram below shows the participating components and how metrics can become Signals.
+The notion of Signals in case of metrics are based on alerts that need to be defined inside Prometheus. The diagram below shows the participating components and how metrics can become Signals.
 
 ![Prometheus Alerting](documents/images/Prometheus_Alerting.png)
 
@@ -591,15 +585,15 @@ Assuming that the scrape targets are configured, capturing a Signal requires the
 
 * Define alerts inside Prometheus (see its [README](monitoring/prometheus/README.md) for configuration details) based on the desired metrics. These may include infrastructure, platform, application metrics or even a combination thereof.  [PromQL](https://prometheus.io/docs/prometheus/latest/querying/basics/), Prometheus' built-in querying language is required to define alert expressions over one or more time-series.
   * Make sure to include `pipeline_component` as label in the alert.
-  * Alerts can be added/updated/removed during runtime. One needs to invoke Prometheus' `reload` action which triggers the reload of the configuration files.
+  * Alerts can be added/updated/removed during runtime. One needs to only invoke Prometheus' `reload` action which triggers the reload of the configuration files.
 * Whenever the expression in the defined alert matches in Prometheus, it pushes the alert to the Alertmanager component. In the configuration of the Alertmanager, a new route and a new receiver of type `webhook` must be defined. Please refer to [alertmanager.yml](monitoring/prometheus/alertmanager.yml) configuration.
-  * If you already have alerting in place with e-mail, Slack etc. as receivers and therefore don't want every alert to forwarded as Signal, then simply introduce a distinction label for the Signal alerts and make the `ingestion-service` route only match alerts that have that particular label.
+  * If you already have alerting in place with e-mail, Slack etc. as receivers and therefore don't want every alert to forwarded as Signal, then simply introduce a distinction label for the Signal alerts and make the `ingestion-service` route only match alerts that have that particular label. Based on this, we make the assumption that all alerts going through the `ingestion-service` route are meant to be Signals.
 
 #### Example: From reporting to Signal
 
 In order to provide a clearer picture, we illustrate the the last sub-sections based on an example. In the reference Big Data pipeline, let us assume that we want to track the number of sensor data records the Node-RED component processes. As we will see later, this can help us indicate a data loading incident. These are the steps that need to be reproduced:
 
-* **Instrumentation**: since our desired metric is use-case driven, we cannot leverage existing performance-based metrics (one could argue that the number of received bytes could be a reasonable indication, but this is not the point here) and therefore need to provide a custom, user-written one. In the Node-RED flow, after consuming the sensor data record, a `function` node must be added with the following Javascript content, utilizing the [Prom-client](https://github.com/siimon/prom-client) library:
+* **Instrumentation**: since our desired metric is use-case driven, we cannot leverage existing performance-based or other low-level metrics (one could argue that the number of received bytes could be a reasonable indication, but this is not the point here) and therefore need to provide a custom, user-written one. In the Node-RED flow, after consuming the sensor data record, a `function` node must be added with the following Javascript content, utilizing the [Prom-client](https://github.com/siimon/prom-client) library:
 
   ```javascript
   const prometheus = context.global.get('prometheus');
@@ -617,9 +611,9 @@ In order to provide a clearer picture, we illustrate the the last sub-sections b
   return msg;
   ```
 
-  We define a Prometheus metrics of type `Counter` (i.e. value, that is positive and strongly monotonic) with the name `mqtt_received_data_packets_total`. Every time the flow reaches this node, we retrieve the current counter object from the execution context (or create a new one if it doesn't exist) and increment its value. The underlying library takes care of exposing this metric to Prometheus.
+  We define a Prometheus metric of type `Counter` (i.e. value, that is positive and strongly monotonic) with the name `mqtt_received_data_packets_total`. Every time the flow reaches this node, we retrieve the current counter object from the execution context (or create a new one if it doesn't exist) and increment its value. The underlying library takes care of exposing this metric to Prometheus.
 
-* **Alert configuration**: now that we have the metrics in Prometheus, is is also required to alert on the situation where Node-RED doesn't receive sensor data. One way to create a Signal on this is to monitor the increase of the counter over time. If the value of the counter doesn't change for a specific amount of time, then this means that there hasn't been any processed sensor record. In Prometheus, we need to define this alert in YAML format. The following is an excerpt from [nodered.yml](monitoring/prometheus/rules/nodered.yml):
+* **Alert configuration**: now that we have the metrics in Prometheus, is is also required to alert on the situation where Node-RED doesn't receive sensor data. One way to create a Signal on this is to monitor the increase of the counter value over time. If the value of the counter doesn't change for a specific amount of time, then this means that there hasn't been any processed sensor record. In Prometheus, we need to define this alert in YAML format. The following is an excerpt from [nodered.yml](monitoring/prometheus/rules/nodered.yml):
 
   ```yaml
   - alert: NotReceivingSensorData
@@ -650,7 +644,7 @@ If the Alertmanager is configured correctly and the above alert gets activated b
 
 This component simply accepts JSON-formatted alerts coming from the Alertmanager ([official alert format](https://prometheus.io/docs/alerting/configuration/#webhook_config)), appends the `"signal_type": "PROMETHEUS_ALERT"` key-value pair to the alert and emits them to the Kafka cluster described in the following section.
 
-Continuing the alerting example from above, if the `NotReceivingSensorData` alert gets triggered in Prometheus, the following JSON will be ingested to Kafka:
+Continuing the alerting example from above, if the `NotReceivingSensorData` alert gets triggered in Prometheus, the following JSON will be ingested into Kafka:
 
 ```yaml
 {
@@ -673,7 +667,7 @@ Continuing the alerting example from above, if the `NotReceivingSensorData` aler
 }
 ```
 
-**Important: This entire component may not be required depending on the alerting mechanism/tool. For example, in case of the TICK stack based on InfluxDB, the Kapacitor component natively supports sending alerts to a Kafka cluster via [Kafka event handler](https://docs.influxdata.com/kapacitor/v1.5/event_handlers/kafka). If an alternative tool to Prometheus is used, please make sure that the alerts are either formatted like in the above example OR extend the Reasoner component by a new Signal parser.**
+**Important: This entire component may not be required depending on the alerting mechanism/tool. For example, in case of the [TICK stack](https://www.influxdata.com/products/) based on InfluxDB, the Kapacitor component natively supports sending alerts to a Kafka cluster via [Kafka event handler](https://docs.influxdata.com/kapacitor/v1.5/event_handlers/kafka). If an alternative tool to Prometheus is used, please make sure that the alerts are either formatted like in the above example OR extend the Reasoner component by a new Signal parser.**
 
 ### Reliable Signal Collector: Kafka Pub/Sub
 
@@ -695,7 +689,7 @@ This component simply acts as a middleware between all the sources of Signals an
 
 **Why** [Apache Flink](https://flink.apache.org/): within the extent of the current Reasoner, the utilization of a stream-processing framework is not absolutely necessary; however with increased amounts of Signals and rules, having the implementation in Flink enables the horizontal scalability at ease. Furthermore it has native support for [Complex Event Processing](https://ci.apache.org/projects/flink/flink-docs-release-1.10/dev/libs/cep.html) and even [Graph analysis](https://ci.apache.org/projects/flink/flink-docs-release-1.10/dev/libs/gelly/).
 
-**Alternative(s)**: for low to moderate load any agent capable of consuming Kafka records, maintaining connections to Neo4j and Cassandra is enoug. For high load, stream processing engines are recommended such as Apache Flink, Apache Spark, Apache Storm, Kafka Streams and more.
+**Alternative(s)**: for low to moderate load any agent capable of consuming Kafka records, maintaining connections to Neo4j and Cassandra is enough. For high load, stream processing engines are recommended such as Apache Flink, Apache Spark, Apache Storm, Kafka Streams and more.
 
 #### What the Reasoner does
 
@@ -704,8 +698,8 @@ In short, the Reasoner job consumes each Signal from the Kafka cluster and proce
 Before going into the details about Signals, CompositeSignals and Incidents, the following describes the main steps/decisions the reasoner executes upon consuming a valid Signal instance:
 
 1. Match the Signal with the Knowledge Graph
-   * if the Signal is not in the database yet, store it and associate it with the correct component
-2. Record the occurrence of this Signal in Cassandra
+   * if the Signal is not in the database yet, store it and associate it with the correct pipeline component
+2. Record the occurrence of the Signal in Cassandra
 3. Check if Signal is really activated - please refer to [Recurring Signals](#recurring-signals) for more.
 4. Collect all the CompositeSignals that this Signal is part of
 5. Determine the CompositeSignals that have been activated by this Signal
@@ -714,14 +708,14 @@ Before going into the details about Signals, CompositeSignals and Incidents, the
 
 #### Recurring Signals
 
-There are situations in which a certain event indicates an issue, but only if it occurrs more than once within a defined time-window. Normally, these cases could be solved by either depending on time-series-based alerts or by writing custom logic that only emits the event, the *Signal* if the given conditions are met. However, there may be cases where the last two solutions are infeasible, e.g. due to lack of control. If all we have are repeating logs, then we need a way to collect a set of them before actually firing a Signal. This is why, internally in the scope of the Reasoner and the Knowledge Graph, a Signal implicitly supports the behavior of being a thresholded, recurring one. It does so by offering two optional properties:
+There are situations in which a certain event indicates an issue, but only if it occurs more than once within a defined time-window. Normally, these cases could be solved by either depending on time-series-based alerts or by writing custom logic that only emits the event - the *Signal* - if the given conditions are met. However, there may be cases where the last two solutions are infeasible, e.g. due to lack of control. If all we have are repeating logs, then we need a way to collect a set of them before actually firing a Signal. This is why, internally in the scope of the Reasoner and the Knowledge Graph, a Signal implicitly supports the behavior of being a thresholded, recurring one. It does so by offering two optional properties:
 
 * `threshold`: an integer value > 0, denoting the minimum number of occurrences required to interpret this Signal as truly activated
 * `coolDownSec`: an integer value > 0, specifying the number of seconds until two consecutive occurrences of the same Signal are associated with each other. In other words, `coolDownSec` defines a maximum duration between two occurrences to cause a `thresholdCounter` to be incremented.
 
 #### Example
 
-Based on the reference pipeline, suppose we want to create a Signal in the NiFi component if there is some issue with the MQTT connection. We observe that upon conncetion problems, the NiFi platform starts to spam log errors indicating the issue. Simply capturing the mentioned log as a conventional Signal would be unwise, because network fluctuations may happen and this would result in so-called false-positives. To be able to make the distinction between sudden, temporary non-issues and actual connection problems is required. For this, we can capture the log event as described in the [How to capture log-based signals](#how-to-capture-log-based signals) section and make use of the additionally supported properties by setting `threshold` to e.g. 10 and `coolDownSec` to e.g. 15. This would cause the Reasoner not to consider this Signal *activated* as long as the `thresholdCounter` doesn't reach the value of `threshold` (in this case 10). However, should the time difference between two consecutive instances of that Signal be greater than `coolDownSec` (in this case 15 seconds), then the counter is reset, thus substantially reducing the false-positive rate of activated Signals.
+Based on the reference pipeline, suppose we want to create a Signal in the NiFi component if there is some issue with the MQTT connection. We observe that upon conncetion problems, the NiFi platform starts to spam log errors indicating the issue. Simply capturing the mentioned log as a conventional Signal would be unwise, because network fluctuations may happen and this would result in so-called false-positives. To be able to make the distinction between sudden, temporary non-issues and actual connection problems is required. For this, we can capture the log event as described in the [How to capture log-based signals](#how-to-capture-log-based signals) section and make use of the additionally supported properties by setting `threshold` to e.g. 10 and `coolDownSec` to e.g. 15. This would cause the Reasoner not to consider this Signal *activated* as long as the internally managed `thresholdCounter` doesn't reach the value of `threshold` (in this case 10). However, should the time difference between two consecutive instances of that Signal be greater than `coolDownSec` (in this case 15 seconds), then the counter is reset, thus substantially reducing the false-positive rate of activated Signals.
 
 In order to make use of this feature, for the time being these properties need to be manually set via the Neo4j Browser.
 
@@ -756,7 +750,7 @@ The Knowledge Graph keeps track of the `lastSignalTime` for each Signal as well 
 
 #### Incident Reporting
 
-In case that all the conditions for the firing of a CompositeSignal are met, i.e. the minimum number of required activate Signals within the time-window is fulfilled, the Reasoner queries all the Incidents the CompositeSignal is connected to. For each of these Incidents, a JSON-formatted report is generated containing the name of the Incident, time of occurrence, name of the CompositeSignal, a summary and all the individual Signals (including their arbitrary details such as log message, stack trace, alert description, ...). This report is then sent to Elasticsearch so that DevOps can visualize it in Kibana. The diagram below shows a sample report in Kibana in a collapsed state.
+In case that all the conditions for the firing of a CompositeSignal are met, i.e. the minimum number of required activated Signals within the time-window is fulfilled, the Reasoner queries all the Incidents the CompositeSignal is connected to. For each of these Incidents, a JSON-formatted report is generated containing the name of the Incident, time of occurrence, name of the CompositeSignal, a summary and all the individual Signals (including their arbitrary details such as log message, stack trace, alert description, ...). This report is then sent to Elasticsearch so that DevOps can visualize it in Kibana. The diagram below shows a sample report in Kibana in a collapsed state.
 
 ![Incident Report in Kibana](documents/images/Incident_Report_Kibana_Collapsed.png)
 
@@ -768,7 +762,7 @@ If you're intereted in the whole JSON document that is sent to Elasticsearch, pl
 
 **Goal**: have an efficient way to represent the relationships between domain nodes and to traverse through them
 
-**Why** [Neo4j](https://neo4j.com/): it's the database technology that previous works (classification of incidents) were built-upon; it is currently the most popular graph database with matured plugins, a very user-friendly query language and drivers for the most common languages.
+**Why** [Neo4j](https://neo4j.com/): it's the database technology that previous works (classification of incidents) were built-upon; it is currently the most popular graph database with matured plugins, has a very user-friendly query language and drivers for the most common languages.
 
 **Alternative(s)**: there are a couple of open-source graph databases such as [JanusGraph](https://janusgraph.org/), [OrientDB](https://orientdb.org/) and more commercial ones
 
@@ -818,7 +812,7 @@ Following the same strategy, we can connect multiple individual Signal nodes wit
 
 ![Neo4j Incident Example](documents/images/Neo4j_Full_Example.png)
 
-Keep in mind that a single Signal node is not limited to one CompositeSignal. It can be part of any other CompositeSignal as well at the same time. Conversely, if the CompositeSignal needs tweaking, we can add, remove connections to Signals, add other Incidents indicated by this CompositeSignal or even update the activation threshold during runtime. The file [UsefulQueries.cypher](reasoning/neo4j/UsefulQueries.cypher) contains several Cypher queries for this context.
+Keep in mind that a single Signal node is not limited to one CompositeSignal. It can be part of any other CompositeSignal as well at the same time. Conversely, if the CompositeSignal needs tweaking, we can add, remove connections to Signals, add other Incidents indicated by this CompositeSignal or even update the activation threshold during runtime. The file [UsefulQueries.cypher](reasoning/neo4j/UsefulQueries.cypher) contains a decent number of Cypher queries for this context.
 
 ### Long-term Storage of Recorded Signals: Cassandra
 
@@ -890,13 +884,13 @@ Although several steps are included in order to only report on meaningful predic
 
 ### Minimum Deployment View (Docker)
 
-The [docker-compose.monitoring.yml](docker-compose.monitoring.yml) and [docker-compose.metrics.yml](docker-compose.metrics.yml) files contain all the service definitions required for running the monitoring pipeline. To save on the number of components, the Flink JobManager as well as the TaskManager are re-used from the reference pipeline. The diagram below shows the deployment view of the monitoring pipeline with Docker-compose and minimum scalability.
+The [docker-compose.monitoring.yml](docker-compose.monitoring.yml) and [docker-compose.metrics.yml](docker-compose.metrics.yml) files contain all the service definitions required for running the monitoring pipeline. To save on the number of components, the Flink JobManager, TaskManager as well as Elasticsearch + Kibana are re-used from the reference pipeline. The diagram below shows the deployment view of the monitoring pipeline with Docker-compose and minimum scalability.
 
 ![Monitoring Pipeline Deployment View](documents/images/Monitoring_Pipeline_Deployment_View.png)
 
 ## Limitations
 
-CompositeSignals and incidents need to be manually added to the Knowledge Graph, currently using the Neo4j Browser. Although thanks to the Cypher language this is not a difficult task, there should be some kind of interface with better usability which also hides Neo4j as the used database. 
+CompositeSignals and Incidents need to be manually added to the Knowledge Graph, currently using the Neo4j Browser. Although thanks to the Cypher language this is not a difficult task, there should be some kind of interface with better usability which also hides Neo4j as the used database. 
 
 The synchronization of clocks and handling of time-zones is out of scope of this project. For every component UTC timestamps are assumed. Furthermore, Signals in the reasoner are processed in the order they arrive. We rely on Kafka's correct ordering. 
 
