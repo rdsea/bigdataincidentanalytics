@@ -2,8 +2,6 @@
 
 This document describes the core ideas and components that can be used in order to reason about IoT incidents in Big Data applications.
 
-[TOC]
-
 - [High-Level Introduction](#high-level-introduction)
 - [Reference Big Data Pipeline](#reference-big-data-pipeline)
   
@@ -31,30 +29,30 @@ This document describes the core ideas and components that can be used in order 
   * [Structure of a Signal](#structure-of-a-signal)
     + [Example: Log-based Signal JSON](#example-log-based-signal-json)
     + [Example: Prometheus Alert-based Signal JSON](#example-prometheus-alert-based-signal-json)
-  * [Log Collection: [Fluentd](https://www.fluentd.org/)](#log-collection-fluentd)
+  * [Log Collection: Fluentd](#log-collection-fluentd)
     + [How to collect logs](#how-to-collect-logs)
     + [The role of tags](#the-role-of-tags)
     + [How to capture log-based signals](#how-to-capture-log-based-signals)
     + [Summary of capturing](#summary-of-capturing)
     + [Where to forward logs](#where-to-forward-logs)
-  * [Metric Collection and Alerting: [Prometheus](https://prometheus.io/)](#metric-collection-and-alerting-prometheus)
+  * [Metric Collection and Alerting: Prometheus](#metric-collection-and-alerting-prometheus)
     + [How to bring data into Prometheus](#how-to-bring-data-into-prometheus)
     + [How to capture Signals with Prometheus](#how-to-capture-signals-with-prometheus)
     + [Example: From reporting to Signal](#example-from-reporting-to-signal)
-  * [Prometheus -> Kafka Bridge: Ingestion-Service by [Nest.js](https://nestjs.com/)](#prometheus---kafka-bridge-ingestion-service-by-nestjs)
-  * [Reliable Signal Collector: [Kafka](https://kafka.apache.org/) Pub/Sub](#reliable-signal-collector-kafka-pubsub)
-  * [Scalable Signal Reasoning: [Flink](https://flink.apache.org/) Reasoner Job](#scalable-signal-reasoning-flink-reasoner-job)
+  * [Prometheus -> Kafka Bridge: Ingestion-Service by Nest.js](#prometheus---kafka-bridge-ingestion-service-by-nestjs)
+  * [Reliable Signal Collector: Kafka Pub/Sub](#reliable-signal-collector-kafka-pubsub)
+  * [Scalable Signal Reasoning: Flink Reasoner Job](#scalable-signal-reasoning-flink-reasoner-job)
     + [What the Reasoner does](#what-the-reasoner-does)
     + [Recurring Signals](#recurring-signals)
       - [Example](#example)
     + [CompositeSignal](#compositesignal)
       - [How does the Reasoner check time constraints?](#how-does-the-reasoner-check-time-constraints)
     + [Incident Reporting](#incident-reporting)
-  * [Dynamic Incident and Signal Knowledge Graph: [Neo4j](https://neo4j.com/)](#dynamic-incident-and-signal-knowledge-graph-neo4j)
+  * [Dynamic Incident and Signal Knowledge Graph: Neo4j](#dynamic-incident-and-signal-knowledge-graph-neo4j)
     + [Signal](#signal-1)
     + [CompositeSignals and Incidents](#compositesignals-and-incidents)
-  * [Long-term Storage of Recorded Signals: [Cassandra](https://cassandra.apache.org/)](#long-term-storage-of-recorded-signals-cassandra)
-  * [Frequent-Pattern Mining: [Spark](https://spark.apache.org/)](#frequent-pattern-mining-spark)
+  * [Long-term Storage of Recorded Signals: Cassandra](#long-term-storage-of-recorded-signals-cassandra)
+  * [Frequent-Pattern Mining: Spark](#frequent-pattern-mining-spark)
     + [Notes on implementation](#notes-on-implementation)
     + [Limitations, Area of Improvement](#limitations-area-of-improvement)
   * [Minimum Deployment View (Docker)](#minimum-deployment-view-docker-1)
@@ -241,7 +239,7 @@ As already introduced, a Signal is any event that is marked or emitted as import
 
 The absolute *minimum* required fields are shown below. Please note the decider property `signal_type` at the beginning:
 
-```json
+```yaml
 {
   "signal_type": "LOG",
   "tag": "signal.MqttConnectionError",
@@ -257,7 +255,7 @@ The above JSON is just an excerpt of a typical Signal log. Since logs can have m
 
 Similarly to the log-based example, the JSON below shows an excerpt of a common Prometheus alert representing the required attributes.
 
-```json
+```yaml
 {
   "signal_type": "PROMETHEUS_ALERT",
   "labels": {
@@ -273,7 +271,7 @@ Similarly to the log-based example, the JSON below shows an excerpt of a common 
 
 The complete alert object may look like this:
 
-```json
+```yaml
 {
   "signal_type": "PROMETHEUS_ALERT",
   "status": "firing",
@@ -300,13 +298,13 @@ Please refer to the [official Prometheus documentation](https://prometheus.io/do
 
 If you're interested in how a Signal is represented in the Knowledge Graph and in the Reasoner component, please head over to the respective section.
 
-### Log Collection: [Fluentd](https://www.fluentd.org/)
+### Log Collection: Fluentd
 
 ![Fluentd](https://avatars3.githubusercontent.com/u/859518?s=80&v=4) 
 
 **Goal**: centralize logs of each participating component and of each layer in a structured, JSON-format.
 
-**Why** Fluentd: it is free, open-source and part of the [Cloud Native Computing Foundation](https://www.cncf.io/projects/) (CNCF) with a graduated status. It has extensive lists of plugins for both input and output sources, and can be easily customized.
+**Why** [Fluentd](https://www.fluentd.org/): it is free, open-source and part of the [Cloud Native Computing Foundation](https://www.cncf.io/projects/) (CNCF) with a graduated status. It has extensive lists of plugins for both input and output sources, and can be easily customized.
 
 **Alternative(s)**: Logstash, Splunk, DataDog, Greylog
 
@@ -390,7 +388,7 @@ Additionally, `tag` should contain the name of the pipeline component it is emit
 
 If the application-layer can be controlled/updated, then the recommended way is to integrate the Fluentd SDK and emit the desired events with it. Furthermore, we encourage to utilize a consistent way of reporting signals from this layer, adhering the [CloudEvents](https://github.com/cloudevents/spec) specification. This part is optional as long as the signals are properly JSON-formatted, consistent across components and have a `tag` property required by Fluentd. We recommend CloudEvents (please refer to the [specification](https://github.com/cloudevents/spec/blob/v1.0/spec.md)) as it is vendor-neutral and its structure promotes flexibility. Example event:
 
-```json
+```yaml
 {
     "specversion" : "1.0",
     "type" : "com.github.pull.create",
@@ -499,7 +497,9 @@ session.transfer(ff, REL_SUCCESS)
 
 Please note the line second to last. The value of `FLUENTD_TAG` is stored as a session attribute in the resulting `FlowFile`. This value is subsequently used in an `InvokeHTTP` Processor. For a better understanding, the image below shows how these two Processors are set up in NiFi.
 
-![NiFi Signal to Fluentd via HTTP](documents/images/NiFi_Signal_To_Fluentd_1.png)
+<p align="center">
+  <img width="50%" src="documents/images/NiFi_Signal_To_Fluentd_1.png">
+</p>
 
 For completeness, here is how the `InvokeHTTP` Processor is configured:
 
@@ -543,13 +543,13 @@ In order to make this subsection round, here is a short summary of the 3 main wa
 
 There is a wide selection of output plugins, so that targets can be tailored to requirements. In our monitoring pipeline, as illustrated in the architecture image, logs are separated into two subsets, *Signal*s and *Noise*s. Every log that receives the annotation `signal` in its tag is interpreted as a *Signal* and therefore will be broadcast to the Kafka component's `signals` topic. The rest of the logs are pushed to Elasticsearch, where DevOps and stakeholders can further use/visualize the data for other purposes.
 
-### Metric Collection and Alerting: [Prometheus](https://prometheus.io/)
+### Metric Collection and Alerting: Prometheus
 
 ![Prometheus](https://avatars1.githubusercontent.com/u/3380462?s=80&v=4)
 
 **Goal**: provide a consistent way to build Signals based on time-series data
 
-**Why** Prometheus: it is free, open-source and part of the [Cloud Native Computing Foundation](https://www.cncf.io/projects/) (CNCF) with a graduated status. It has huge community and commercial support.
+**Why** [Prometheus](https://prometheus.io/): it is free, open-source and part of the [Cloud Native Computing Foundation](https://www.cncf.io/projects/) (CNCF) with a graduated status. It has huge community and commercial support.
 
 **Alternative(s)**: InfluxDB (TICK stack), OpenTSDB, Nagios, Sensu
 
@@ -638,13 +638,13 @@ In order to provide a clearer picture, we illustrate the the last sub-sections b
 
 If the Alertmanager is configured correctly and the above alert gets activated by Prometheus, then the Alertmanager forwards it to the Ingestion-Service via a POST HTTP request. The Ingestion-Service is described next.
 
-### Prometheus -> Kafka Bridge: Ingestion-Service by [Nest.js](https://nestjs.com/)
+### Prometheus -> Kafka Bridge: Ingestion-Service by Nest.js
 
 ![Nest.js](https://avatars1.githubusercontent.com/u/28507035?s=80&v=4)
 
 **Goal**: provide a low-overhead solution for bringing Prometheus alerts to an Apache Kafka cluster.
 
-**Why** Nest.js: framework that facilitates the creation of fast, scalable, lightweight, Node.js based backend applications. Supports [Fastify](https://www.fastify.io/), a low-cost and efficient web framework.
+**Why** [Nest.js](https://nestjs.com/): framework that facilitates the creation of fast, scalable, lightweight, Node.js based backend applications. Supports [Fastify](https://www.fastify.io/), a low-cost and efficient web framework.
 
 **Alternative(s)**: any high-performance server-side web framework, that is capable of emitting events to a Kafka cluster.
 
@@ -652,7 +652,7 @@ This component simply accepts JSON-formatted alerts coming from the Alertmanager
 
 Continuing the alerting example from above, if the `NotReceivingSensorData` alert gets triggered in Prometheus, the following JSON will be ingested to Kafka:
 
-```json
+```yaml
 {
    "signal_type": "PROMETHEUS_ALERT",
    "status": "firing",
@@ -675,25 +675,25 @@ Continuing the alerting example from above, if the `NotReceivingSensorData` aler
 
 **Important: This entire component may not be required depending on the alerting mechanism/tool. For example, in case of the TICK stack based on InfluxDB, the Kapacitor component natively supports sending alerts to a Kafka cluster via [Kafka event handler](https://docs.influxdata.com/kapacitor/v1.5/event_handlers/kafka). If an alternative tool to Prometheus is used, please make sure that the alerts are either formatted like in the above example OR extend the Reasoner component by a new Signal parser.**
 
-### Reliable Signal Collector: [Kafka](https://kafka.apache.org/) Pub/Sub
+### Reliable Signal Collector: Kafka Pub/Sub
 
 <img src="https://images.safe.com/logos/formats/apache-kafka_100.png" alt="Kafka" width="80" />
 
 **Goal**: provide a way to reliable collect Signals in real-time with consistent ordering and data retention
 
-**Why** Apache Kafka: it is free, open-source and battle-tested solution; can handle high throughput and is easily scalable if required
+**Why** [Apache Kafka](https://kafka.apache.org/): it is free, open-source and battle-tested solution; can handle high throughput and is easily scalable if required
 
 **Alternative(s)**: RabbitMQ, Google Cloud Pub/Sub, Amazon Kinesis, ActiveMQ and more
 
 This component simply acts as a middleware between all the sources of Signals and the components that are interested in processing those Signals (in our case the Reasoner). Apart from performance reasons, the usage of such a middleware serves the purpose of decoupling the sources and the targets from each other. In other words, with this setup it is straightforward to introduce new ways of gathering Signals and also processing them. If desired, multiple parallel jobs/programs can consume the Signals from the middleware and process them the way they want.
 
-### Scalable Signal Reasoning: [Flink](https://flink.apache.org/) Reasoner Job
+### Scalable Signal Reasoning: Flink Reasoner Job
 
 <img src="https://sau.nobleprog.com/sites/hitrahr/files/category_images/height100_scale/apache_flink_training.png?t=f7fdbae1" alt="Flink" width="80" />
 
 **Goal**: process Signals
 
-**Why** Apache Flink: within the extent of the current Reasoner, the utilization of a stream-processing framework is not absolutely necessary; however with increased amounts of Signals and rules, having the implementation in Flink enables the horizontal scalability at ease. Furthermore it has native support for [Complex Event Processing](https://ci.apache.org/projects/flink/flink-docs-release-1.10/dev/libs/cep.html) and even [Graph analysis](https://ci.apache.org/projects/flink/flink-docs-release-1.10/dev/libs/gelly/).
+**Why** [Apache Flink](https://flink.apache.org/): within the extent of the current Reasoner, the utilization of a stream-processing framework is not absolutely necessary; however with increased amounts of Signals and rules, having the implementation in Flink enables the horizontal scalability at ease. Furthermore it has native support for [Complex Event Processing](https://ci.apache.org/projects/flink/flink-docs-release-1.10/dev/libs/cep.html) and even [Graph analysis](https://ci.apache.org/projects/flink/flink-docs-release-1.10/dev/libs/gelly/).
 
 **Alternative(s)**: for low to moderate load any agent capable of consuming Kafka records, maintaining connections to Neo4j and Cassandra is enoug. For high load, stream processing engines are recommended such as Apache Flink, Apache Spark, Apache Storm, Kafka Streams and more.
 
@@ -719,7 +719,7 @@ There are situations in which a certain event indicates an issue, but only if it
 * `threshold`: an integer value > 0, denoting the minimum number of occurrences required to interpret this Signal as truly activated
 * `coolDownSec`: an integer value > 0, specifying the number of seconds until two consecutive occurrences of the same Signal are associated with each other. In other words, `coolDownSec` defines a maximum duration between two occurrences to cause a `thresholdCounter` to be incremented.
 
-##### Example
+#### Example
 
 Based on the reference pipeline, suppose we want to create a Signal in the NiFi component if there is some issue with the MQTT connection. We observe that upon conncetion problems, the NiFi platform starts to spam log errors indicating the issue. Simply capturing the mentioned log as a conventional Signal would be unwise, because network fluctuations may happen and this would result in so-called false-positives. To be able to make the distinction between sudden, temporary non-issues and actual connection problems is required. For this, we can capture the log event as described in the [How to capture log-based signals](#how-to-capture-log-based signals) section and make use of the additionally supported properties by setting `threshold` to e.g. 10 and `coolDownSec` to e.g. 15. This would cause the Reasoner not to consider this Signal *activated* as long as the `thresholdCounter` doesn't reach the value of `threshold` (in this case 10). However, should the time difference between two consecutive instances of that Signal be greater than `coolDownSec` (in this case 15 seconds), then the counter is reset, thus substantially reducing the false-positive rate of activated Signals.
 
@@ -750,7 +750,7 @@ In the current version, CompositeSignals, Incidents as well as the relationships
 
 The `activationThreshold` property offers a way to associate a lot of individual Signals with a single CompositeSignal while not requiring all of them to be active in order to cause an Incident report.
 
-##### How does the Reasoner check time constraints?
+#### How does the Reasoner check time constraints?
 
 The Knowledge Graph keeps track of the `lastSignalTime` for each Signal as well as of the `activationTime` between a Signal and corresponding CompositeSignal(s) respectively. This makes it possible to optimize queries and make temporal-based decisions.
 
@@ -762,13 +762,13 @@ In case that all the conditions for the firing of a CompositeSignal are met, i.e
 
 If you're intereted in the whole JSON document that is sent to Elasticsearch, please refer to the [Sample_Incident_Report.json](reasoning/flink-reasoner/Sample_Incident_Report.json) file.
 
-### Dynamic Incident and Signal Knowledge Graph: [Neo4j](https://neo4j.com/)
+### Dynamic Incident and Signal Knowledge Graph: Neo4j
 
 ![Neo4j](https://avatars1.githubusercontent.com/u/201120?s=80&v=4)
 
 **Goal**: have an efficient way to represent the relationships between domain nodes and to traverse through them
 
-**Why** Neo4j: it's the database technology that previous works (classification of incidents) were built-upon; it is currently the most popular graph database with matured plugins, a very user-friendly query language and drivers for the most common languages.
+**Why** [Neo4j](https://neo4j.com/): it's the database technology that previous works (classification of incidents) were built-upon; it is currently the most popular graph database with matured plugins, a very user-friendly query language and drivers for the most common languages.
 
 **Alternative(s)**: there are a couple of open-source graph databases such as [JanusGraph](https://janusgraph.org/), [OrientDB](https://orientdb.org/) and more commercial ones
 
@@ -780,7 +780,9 @@ As described in the previous section, a Signal node is automatically created by 
 
 **Example**: Let's say the operator of the MQTT broker set up a Prometheus alert named `MqttInstanceDownAlert`. Upon the activation of this alert, the Signal gets through to the Reasoner and will be persisted into the Knowledge Graph as shown below.
 
-<img src="documents/images/Neo4j_New_Signal.png" alt="Neo4j New Signal" style="zoom:40%;" />
+<p align="center">
+  <img width="50%" src="documents/images/Neo4j_New_Signal.png">
+</p>
 
 *Note*: some relationships and nodes are omitted on purpose.
 
@@ -808,7 +810,9 @@ SET compSig.coolDownSec=30; // optionally set the coolDownSec of the CompositeSi
 
 This query results in the following nodes and relationships:
 
-<img src="documents/images/Neo4j_New_CompSig.png" alt="Neo4j New CompositeSignal and Incident" style="zoom:40%;" />
+<p align="center">
+  <img width="50%" src="documents/images/Neo4j_New_CompSig.png">
+</p>
 
 Following the same strategy, we can connect multiple individual Signal nodes with a CompositeSignal one via the `PART_OF` relationship. The below diagram shows a full example, containing 4 Signals being part of the `MqttUnavailable` CompositeSignal.
 
@@ -816,13 +820,13 @@ Following the same strategy, we can connect multiple individual Signal nodes wit
 
 Keep in mind that a single Signal node is not limited to one CompositeSignal. It can be part of any other CompositeSignal as well at the same time. Conversely, if the CompositeSignal needs tweaking, we can add, remove connections to Signals, add other Incidents indicated by this CompositeSignal or even update the activation threshold during runtime. The file [UsefulQueries.cypher](reasoning/neo4j/UsefulQueries.cypher) contains several Cypher queries for this context.
 
-### Long-term Storage of Recorded Signals: [Cassandra](https://cassandra.apache.org/)
+### Long-term Storage of Recorded Signals: Cassandra
 
 <img src="https://a.fsdn.com/allura/s/apache-cassandra/icon?1554403225?&amp;w=90" width="80" />
 
 **Goal**: store each occurrence of a Signal in a database suitable for analytics later
 
-**Why** Cassandra: it is a tried and tested database in analytics scenarios; features scalability, high availability, decentralization while maintaining performance; Also a contributing factor to the decision was that Cassandra is supported by both Flink and Spark.
+**Why** [Cassandra](https://cassandra.apache.org/): it is a tried and tested database in analytics scenarios; features scalability, high availability, decentralization while maintaining performance; Also a contributing factor to the decision was that Cassandra is supported by both Flink and Spark.
 
 **Alternative(s)**: for low volume of data, it is also possible to get away with solutions like [MongoDB](https://www.mongodb.com/), however databases like [CouchDB](https://couchdb.apache.org/), [HBase](https://hbase.apache.org/), [Accumulo](https://accumulo.apache.org/) and Cassandra are optimized for huge datasets. A good comparison can be found [here](https://kkovacs.eu/cassandra-vs-mongodb-vs-couchdb-vs-redis).
 
@@ -846,7 +850,7 @@ e7adcdc3-6b7f-455f-bdbc-d05b11d4542a |           NODE-RED | NotReceivingSensorDa
 
 For more information on how to set up Cassandra, please refer to its [README](reasoning/cassandra/README.md).
 
-### Frequent-Pattern Mining: [Spark](https://spark.apache.org/)
+### Frequent-Pattern Mining: Spark
 
 <img src="https://images.vogel.de/vogelonline/bdb/1596200/1596255/33.jpg" alt="Spark" width="80" />
 
